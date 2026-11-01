@@ -5,6 +5,7 @@ import '../models/supplier_model.dart';
 import '../models/product_model.dart';
 import '../models/warehouse_model.dart';
 import '../models/stock_transfer_model.dart';
+import '../models/stock_adjustment_model.dart';
 import '../models/invoice_model.dart';
 import '../models/invoice_item_model.dart';
 import '../models/expense_model.dart';
@@ -64,6 +65,7 @@ class DatabaseService extends ChangeNotifier {
   final List<ExpenseModel> _expenses = [];
   final List<PaymentVoucherModel> _paymentVouchers = [];
   final List<VanSalesmanProgressModel> _salesmenProgress = [];
+  final List<StockAdjustmentModel> _stockAdjustments = [];
 
   List<CompanyModel> get companies => List.unmodifiable(_companies);
   List<CustomerModel> get customers => List.unmodifiable(_customers);
@@ -71,6 +73,7 @@ class DatabaseService extends ChangeNotifier {
   List<ProductModel> get products => List.unmodifiable(_products);
   List<WarehouseModel> get warehouses => List.unmodifiable(_warehouses);
   List<StockTransferModel> get stockTransfers => List.unmodifiable(_stockTransfers);
+  List<StockAdjustmentModel> get stockAdjustments => List.unmodifiable(_stockAdjustments);
   List<InvoiceModel> get invoices => List.unmodifiable(_invoices);
   List<ExpenseModel> get expenses => List.unmodifiable(_expenses);
   List<PaymentVoucherModel> get paymentVouchers => List.unmodifiable(_paymentVouchers);
@@ -535,6 +538,113 @@ class DatabaseService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Add a new product
+  void addProduct(ProductModel product) {
+    _products.add(product);
+    notifyListeners();
+  }
+
+  // Update existing product
+  void updateProduct(ProductModel product) {
+    final index = _products.indexWhere((p) => p.id == product.id);
+    if (index != -1) {
+      _products[index] = product;
+      notifyListeners();
+    }
+  }
+
+  // Delete product
+  void deleteProduct(String productId) {
+    _products.removeWhere((p) => p.id == productId);
+    notifyListeners();
+  }
+
+  // Record Stock Adjustment (جرد وتسوية كميات المخزون)
+  void recordStockAdjustment({
+    required String productId,
+    required String warehouseId,
+    required double newQuantity,
+    required AdjustmentReason reason,
+    String? notes,
+    required String userId,
+    required String userName,
+  }) {
+    final pIndex = _products.indexWhere((p) => p.id == productId);
+    if (pIndex != -1) {
+      final prod = _products[pIndex];
+      final prevQty = prod.stockByWarehouse[warehouseId] ?? 0.0;
+      final diff = newQuantity - prevQty;
+      prod.stockByWarehouse[warehouseId] = newQuantity.clamp(0.0, 9999999.0);
+
+      final wMatch = _warehouses.where((w) => w.id == warehouseId);
+      final wName = wMatch.isNotEmpty ? wMatch.first.nameAr : warehouseId;
+
+      final adj = StockAdjustmentModel(
+        id: 'ADJ-${DateTime.now().millisecondsSinceEpoch}',
+        adjustmentNumber: 'ADJ-${DateTime.now().year}-${_stockAdjustments.length + 101}',
+        date: DateTime.now(),
+        productId: prod.id,
+        productNameAr: prod.nameAr,
+        productNameEn: prod.nameEn,
+        warehouseId: warehouseId,
+        warehouseName: wName,
+        previousQuantity: prevQty,
+        newQuantity: newQuantity,
+        differenceQuantity: diff,
+        reason: reason,
+        notes: notes,
+        adjustedByUserId: userId,
+        adjustedByUserName: userName,
+      );
+
+      _stockAdjustments.insert(0, adj);
+      notifyListeners();
+    }
+  }
+
+  // Generalized Multi-Item Stock Transfer (نقل وتفريغ مخزني بين الفروع والسيارات)
+  void transferStockBetweenWarehouses({
+    required String fromWarehouseId,
+    required String toWarehouseId,
+    required List<StockTransferItem> items,
+    required String requestedByUserId,
+    required String requestedByUserName,
+    String? notes,
+  }) {
+    final fromWh = _warehouses.firstWhere((w) => w.id == fromWarehouseId, orElse: () => _warehouses.first);
+    final toWh = _warehouses.firstWhere((w) => w.id == toWarehouseId, orElse: () => _warehouses.last);
+
+    for (final item in items) {
+      final pIndex = _products.indexWhere((p) => p.id == item.productId);
+      if (pIndex != -1) {
+        final prod = _products[pIndex];
+        final fromStock = prod.stockByWarehouse[fromWarehouseId] ?? 0.0;
+        final toStock = prod.stockByWarehouse[toWarehouseId] ?? 0.0;
+
+        prod.stockByWarehouse[fromWarehouseId] = (fromStock - item.quantity).clamp(0.0, 9999999.0);
+        prod.stockByWarehouse[toWarehouseId] = toStock + item.quantity;
+      }
+    }
+
+    final transfer = StockTransferModel(
+      id: 'TRF-${DateTime.now().millisecondsSinceEpoch}',
+      transferNumber: 'TRF-${DateTime.now().year}-${_stockTransfers.length + 101}',
+      fromWarehouseId: fromWarehouseId,
+      fromWarehouseName: fromWh.nameAr,
+      toVanId: toWarehouseId,
+      toVanName: toWh.nameAr,
+      requestedByUserId: requestedByUserId,
+      requestedByUserName: requestedByUserName,
+      date: DateTime.now(),
+      items: items,
+      status: TransferStatus.loaded,
+      notes: notes ?? 'نقل مخزني بين المستودعات وسيارات التوزيع',
+    );
+
+    _stockTransfers.insert(0, transfer);
+    notifyListeners();
+  }
+
   // Seed Data
   void _seedInitialData() {
     // 0. Primary Seed Company
@@ -750,6 +860,108 @@ class DatabaseService extends ChangeNotifier {
         },
         batchNumber: 'B-2605-W',
         expiryDate: DateTime.now().add(const Duration(days: 360)),
+      ),
+    ]);
+
+    // 4b. Initial Stock Transfers Seed Data
+    _stockTransfers.addAll([
+      StockTransferModel(
+        id: 'TRF-2026-001',
+        transferNumber: 'TRF-2026-101',
+        fromWarehouseId: 'WH-MAIN',
+        fromWarehouseName: 'المستودع المركزي - الرياض',
+        toVanId: 'VAN-01',
+        toVanName: 'سيارة 1 - الرياض شمال (محمد)',
+        requestedByUserId: 'USR-003',
+        requestedByUserName: 'محمد الدوسري - Mohammed Al-Dosari',
+        date: DateTime.now().subtract(const Duration(hours: 6)),
+        items: [
+          StockTransferItem(
+            productId: 'PRD-001',
+            productName: 'حليب المراعي طازج كامل الدسم 1 لتر',
+            quantity: 50.0,
+            unit: 'حبة',
+          ),
+          StockTransferItem(
+            productId: 'PRD-002',
+            productName: 'عصير مانجو المراعي بدون سكر 1.4 لتر',
+            quantity: 30.0,
+            unit: 'حبة',
+          ),
+          StockTransferItem(
+            productId: 'PRD-003',
+            productName: 'مشروب كوكاكولا علبة 330 مل',
+            quantity: 80.0,
+            unit: 'حبة',
+          ),
+        ],
+        status: TransferStatus.loaded,
+        notes: 'تحميل الصباح - Morning Load Van 1',
+      ),
+      StockTransferModel(
+        id: 'TRF-2026-002',
+        transferNumber: 'TRF-2026-102',
+        fromWarehouseId: 'WH-MAIN',
+        fromWarehouseName: 'المستودع المركزي - الرياض',
+        toVanId: 'VAN-02',
+        toVanName: 'سيارة 2 - الرياض شرق (أحمد)',
+        requestedByUserId: 'USR-005',
+        requestedByUserName: 'أحمد الغامدي - Ahmed Al-Ghamdi',
+        date: DateTime.now().subtract(const Duration(hours: 7)),
+        items: [
+          StockTransferItem(
+            productId: 'PRD-003',
+            productName: 'مشروب كوكاكولا علبة 330 مل',
+            quantity: 60.0,
+            unit: 'حبة',
+          ),
+          StockTransferItem(
+            productId: 'PRD-004',
+            productName: 'مياه بيرين كرتون 40 × 330 مل',
+            quantity: 20.0,
+            unit: 'كرتون',
+          ),
+        ],
+        status: TransferStatus.loaded,
+        notes: 'تحميل الصباح - Morning Load Van 2',
+      ),
+    ]);
+
+    // 4c. Initial Stock Adjustments Seed Data
+    _stockAdjustments.addAll([
+      StockAdjustmentModel(
+        id: 'ADJ-2026-001',
+        adjustmentNumber: 'ADJ-2026-101',
+        date: DateTime.now().subtract(const Duration(days: 2)),
+        productId: 'PRD-001',
+        productNameAr: 'حليب المراعي طازج كامل الدسم 1 لتر',
+        productNameEn: 'Almarai Fresh Milk Full Fat 1L',
+        warehouseId: 'WH-MAIN',
+        warehouseName: 'المستودع المركزي - الرياض',
+        previousQuantity: 460.0,
+        newQuantity: 450.0,
+        differenceQuantity: -10.0,
+        reason: AdjustmentReason.damaged,
+        notes: 'تلف عبوات أثناء تفريغ الشحنة من المورد',
+        adjustedByUserId: 'USR-002',
+        adjustedByUserName: 'سارة المنصور - مستودعات',
+      ),
+      StockAdjustmentModel(
+        id: 'ADJ-2026-002',
+        adjustmentNumber: 'ADJ-2026-102',
+        date: DateTime.now().subtract(const Duration(days: 5)),
+        productId: 'PRD-004',
+        productNameAr: 'مياه بيرين كرتون 40 × 330 مل',
+        productNameEn: 'Berain Water Carton 40 x 330ml',
+        warehouseId: 'WH-MAIN',
+        warehouseName: 'المستودع المركزي - الرياض',
+        previousQuantity: 495.0,
+        newQuantity: 500.0,
+        differenceQuantity: 5.0,
+        reason: AdjustmentReason.physicalCount,
+        notes: 'مطابقة الجرد الفعلي الأسبوعي',
+        adjustedByUserId: 'USR-002',
+        adjustedByUserName: 'سارة المنصور - مستودعات',
       ),
     ]);
 

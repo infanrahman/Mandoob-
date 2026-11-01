@@ -40,3 +40,6 @@ dist/
 .DS_Store
 Thumbs.db
 *.log
+
+# Large universal release binaries
+releases/*-universal.apk
