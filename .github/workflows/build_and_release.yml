@@ -34,12 +34,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Java JDK
+      - name: Set up Java JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -65,10 +64,22 @@ jobs:
       - name: Prepare Android Artifacts
         run: |
           mkdir -p ../dist/android
-          cp build/app/outputs/flutter-apk/app-release.apk ../dist/android/mandhoob-android-universal.apk
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../dist/android/mandhoob-android-arm64-v8a.apk || true
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk ../dist/android/mandhoob-android-armeabi-v7a.apk || true
-          cp build/app/outputs/bundle/release/app-release.aab ../dist/android/mandhoob-android.aab
+          # Copy universal APK
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            cp build/app/outputs/flutter-apk/app-release.apk ../dist/android/mandhoob-android-universal.apk
+          fi
+          # Copy split APKs if generated
+          if [ -f "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" ]; then
+            cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../dist/android/mandhoob-android-arm64-v8a.apk
+          fi
+          if [ -f "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" ]; then
+            cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk ../dist/android/mandhoob-android-armeabi-v7a.apk
+          fi
+          # Copy AAB
+          if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
+            cp build/app/outputs/bundle/release/app-release.aab ../dist/android/mandhoob-android.aab
+          fi
+          ls -la ../dist/android
 
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
@@ -102,8 +113,17 @@ jobs:
       - name: Package iOS Runner Archive
         run: |
           mkdir -p ../dist/ios
-          cd build/ios/iphoneos
-          zip -r ../../../dist/ios/mandhoob-ios-runner.zip Runner.app
+          APP_PATH=$(find build/ios -name "Runner.app" -type d | head -n 1)
+          if [ -n "$APP_PATH" ]; then
+            echo "Found Runner.app at $APP_PATH"
+            PARENT_DIR=$(dirname "$APP_PATH")
+            (cd "$PARENT_DIR" && zip -r Runner.zip Runner.app)
+            mv "$PARENT_DIR/Runner.zip" ../dist/ios/mandhoob-ios-runner.zip
+          else
+            echo "Runner.app not found; packaging entire build/ios directory"
+            (cd build && zip -r ../../dist/ios/mandhoob-ios-runner.zip ios)
+          fi
+          ls -la ../dist/ios
 
       - name: Upload iOS Artifacts
         uses: actions/upload-artifact@v4
@@ -115,10 +135,14 @@ jobs:
   create-release:
     name: Publish Testing Release
     needs: [build-android, build-ios]
+    if: always() && !cancelled() && needs.build-android.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Create Release Staging Directory
+        run: mkdir -p release-assets
 
       - name: Download Android Artifacts
         uses: actions/download-artifact@v4
@@ -128,9 +152,13 @@ jobs:
 
       - name: Download iOS Artifacts
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: ios-build
           path: release-assets
+
+      - name: List Release Assets
+        run: ls -la release-assets
 
       - name: Determine Tag and Release Name
         id: release_meta
@@ -139,47 +167,26 @@ jobs:
             TAG_NAME="${GITHUB_REF#refs/tags/}"
             RELEASE_TITLE="M-Andhoob Release ${TAG_NAME}"
             IS_PRERELEASE=false
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.tag_name }}" ]]; then
             TAG_NAME="${{ github.event.inputs.tag_name }}"
             RELEASE_TITLE="${{ github.event.inputs.release_title }}"
             IS_PRERELEASE=true
           else
-            TAG_NAME="v1.0.0-build.${{ github.run_number }}"
-            RELEASE_TITLE="M-Andhoob Test Build #${{ github.run_number }}"
+            TAG_NAME="v1.0.0-test"
+            RELEASE_TITLE="M-Andhoob Test Release"
             IS_PRERELEASE=true
           fi
           echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "release_title=${RELEASE_TITLE}" >> $GITHUB_OUTPUT
           echo "prerelease=${IS_PRERELEASE}" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release with Downloads
+      - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_meta.outputs.tag_name }}
           name: ${{ steps.release_meta.outputs.release_title }}
           prerelease: ${{ steps.release_meta.outputs.prerelease }}
           generate_release_notes: true
-          body: |
-            ### 🚀 M-Andhoob (مندوب) - Testing Release
-
-            #### 📱 Direct Downloads for Testing:
-            - **Universal Android APK (Direct install on any Android phone)**: `mandhoob-android-universal.apk`
-            - **Optimized ARM64 Android APK (Modern smartphones)**: `mandhoob-android-arm64-v8a.apk`
-            - **Google Play App Bundle (AAB)**: `mandhoob-android.aab`
-            - **iOS Test Build (Runner.app Archive)**: `mandhoob-ios-runner.zip`
-
-            ---
-            #### ✨ Key Features Included in this Build:
-            1. **Saudi ZATCA E-Invoicing Phase 1 & Phase 2 Compliance**:
-               - Cryptographic 8-Tag TLV QR code encoding.
-               - UBL 2.1 XML compliance (B2C Simplified & B2B Standard Tax Invoices).
-               - ESC/POS 80mm & 58mm thermal receipt printing.
-            2. **Live Van Tracking & Field Sales Operations**:
-               - Customer **Credit Limits**, **Due Balance**, and **Available Credit**.
-               - Route stop inspection with **Pending Unpaid Invoices** and **Today's Collections**.
-               - Salesman can **add new customers directly on the route** (`+ Add Customer to Route`).
-               - **Van Stock Management**: Morning loaded stock, sold stock, evening balance & stock load modal.
-               - **Salesman Performance**: Target vs Actual progress bars, End-of-Day cash reconciliation (EOD settlement), and live chronological Operations Feed.
-            3. **Bilingual Arabic (RTL) / English (LTR)** interface with instant switching.
-            4. **Responsive Mobile-First UI** (optimized for all screen sizes from 375px compact smartphones to tablets and desktop).
           files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
