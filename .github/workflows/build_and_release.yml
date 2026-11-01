@@ -110,15 +110,24 @@ jobs:
       - name: Build iOS App (No Codesign for Testing)
         run: flutter build ios --release --no-codesign
 
-      - name: Package iOS Runner Archive
+      - name: Package iOS Runner & IPA Archive
         run: |
           mkdir -p ../dist/ios
           APP_PATH=$(find build/ios -name "Runner.app" -type d | head -n 1)
           if [ -n "$APP_PATH" ]; then
             echo "Found Runner.app at $APP_PATH"
+            # 1. Package Runner.app ZIP
             PARENT_DIR=$(dirname "$APP_PATH")
             (cd "$PARENT_DIR" && zip -r Runner.zip Runner.app)
             mv "$PARENT_DIR/Runner.zip" ../dist/ios/mandhoob-ios-runner.zip
+
+            # 2. Package .IPA for Sideloading (Sideloadly / AltStore / Test devices)
+            PAYLOAD_DIR="/tmp/ipa_packaging"
+            rm -rf "$PAYLOAD_DIR"
+            mkdir -p "$PAYLOAD_DIR/Payload"
+            cp -r "$APP_PATH" "$PAYLOAD_DIR/Payload/"
+            (cd "$PAYLOAD_DIR" && zip -r mandhoob-ios-unsigned.ipa Payload)
+            mv "$PAYLOAD_DIR/mandhoob-ios-unsigned.ipa" ../dist/ios/mandhoob-ios-unsigned.ipa
           else
             echo "Runner.app not found; packaging entire build/ios directory"
             (cd build && zip -r ../../dist/ios/mandhoob-ios-runner.zip ios)
