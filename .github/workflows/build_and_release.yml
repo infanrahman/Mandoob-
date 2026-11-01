@@ -1,0 +1,185 @@
+name: Build & Release Mobile Apps (Android & iOS)
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag Name (e.g. v1.0.0-test)'
+        required: false
+        default: 'v1.0.0-test'
+      release_title:
+        description: 'Release Title'
+        required: false
+        default: 'M-Andhoob Test Release'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Build Android (APK & AAB)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mandhoob_mobile_desktop
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter & Environment
+        run: flutter doctor -v
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Universal Release APK
+        run: flutter build apk --release
+
+      - name: Build Split-per-ABI Release APKs
+        run: flutter build apk --split-per-abi --release
+
+      - name: Build Android App Bundle (AAB)
+        run: flutter build appbundle --release
+
+      - name: Prepare Android Artifacts
+        run: |
+          mkdir -p ../dist/android
+          cp build/app/outputs/flutter-apk/app-release.apk ../dist/android/mandhoob-android-universal.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../dist/android/mandhoob-android-arm64-v8a.apk || true
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk ../dist/android/mandhoob-android-armeabi-v7a.apk || true
+          cp build/app/outputs/bundle/release/app-release.aab ../dist/android/mandhoob-android.aab
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-builds
+          path: dist/android/*
+          retention-days: 14
+
+  build-ios:
+    name: Build iOS (Runner App Archive)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: mandhoob_mobile_desktop
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build iOS App (No Codesign for Testing)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package iOS Runner Archive
+        run: |
+          mkdir -p ../dist/ios
+          cd build/ios/iphoneos
+          zip -r ../../../dist/ios/mandhoob-ios-runner.zip Runner.app
+
+      - name: Upload iOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: dist/ios/*
+          retention-days: 14
+
+  create-release:
+    name: Publish Testing Release
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-builds
+          path: release-assets
+
+      - name: Download iOS Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-build
+          path: release-assets
+
+      - name: Determine Tag and Release Name
+        id: release_meta
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            RELEASE_TITLE="M-Andhoob Release ${TAG_NAME}"
+            IS_PRERELEASE=false
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG_NAME="${{ github.event.inputs.tag_name }}"
+            RELEASE_TITLE="${{ github.event.inputs.release_title }}"
+            IS_PRERELEASE=true
+          else
+            TAG_NAME="v1.0.0-build.${{ github.run_number }}"
+            RELEASE_TITLE="M-Andhoob Test Build #${{ github.run_number }}"
+            IS_PRERELEASE=true
+          fi
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "release_title=${RELEASE_TITLE}" >> $GITHUB_OUTPUT
+          echo "prerelease=${IS_PRERELEASE}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release with Downloads
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag_name }}
+          name: ${{ steps.release_meta.outputs.release_title }}
+          prerelease: ${{ steps.release_meta.outputs.prerelease }}
+          generate_release_notes: true
+          body: |
+            ### 🚀 M-Andhoob (مندوب) - Testing Release
+
+            #### 📱 Direct Downloads for Testing:
+            - **Universal Android APK (Direct install on any Android phone)**: `mandhoob-android-universal.apk`
+            - **Optimized ARM64 Android APK (Modern smartphones)**: `mandhoob-android-arm64-v8a.apk`
+            - **Google Play App Bundle (AAB)**: `mandhoob-android.aab`
+            - **iOS Test Build (Runner.app Archive)**: `mandhoob-ios-runner.zip`
+
+            ---
+            #### ✨ Key Features Included in this Build:
+            1. **Saudi ZATCA E-Invoicing Phase 1 & Phase 2 Compliance**:
+               - Cryptographic 8-Tag TLV QR code encoding.
+               - UBL 2.1 XML compliance (B2C Simplified & B2B Standard Tax Invoices).
+               - ESC/POS 80mm & 58mm thermal receipt printing.
+            2. **Live Van Tracking & Field Sales Operations**:
+               - Customer **Credit Limits**, **Due Balance**, and **Available Credit**.
+               - Route stop inspection with **Pending Unpaid Invoices** and **Today's Collections**.
+               - Salesman can **add new customers directly on the route** (`+ Add Customer to Route`).
+               - **Van Stock Management**: Morning loaded stock, sold stock, evening balance & stock load modal.
+               - **Salesman Performance**: Target vs Actual progress bars, End-of-Day cash reconciliation (EOD settlement), and live chronological Operations Feed.
+            3. **Bilingual Arabic (RTL) / English (LTR)** interface with instant switching.
+            4. **Responsive Mobile-First UI** (optimized for all screen sizes from 375px compact smartphones to tablets and desktop).
+          files: release-assets/*
