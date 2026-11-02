@@ -42,14 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: Text(
-              lang.isArabic ? 'إعدادات النظام والتهيئة' : 'Settings & Configurations',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            elevation: 0,
-            centerTitle: false,
-          ),
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
             children: [
@@ -1584,7 +1576,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        scrollable: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         title: const Row(
           children: [
             Icon(Icons.security, color: AppColors.saleGreen),

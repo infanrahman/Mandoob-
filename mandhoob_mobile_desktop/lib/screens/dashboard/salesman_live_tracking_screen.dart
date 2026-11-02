@@ -843,16 +843,21 @@ class _SalesmanLiveTrackingScreenState extends State<SalesmanLiveTrackingScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Padding(
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
           padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            left: 18,
+            right: 18,
+            top: 14,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.9,
           ),
           child: Form(
             key: formKey,
@@ -861,6 +866,17 @@ class _SalesmanLiveTrackingScreenState extends State<SalesmanLiveTrackingScreen>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       const CircleAvatar(
@@ -1041,27 +1057,46 @@ class _SalesmanLiveTrackingScreenState extends State<SalesmanLiveTrackingScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final mainWhStock = selectedProd.stockByWarehouse['WH-MAIN'] ?? 0.0;
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    lang.isArabic ? 'تحميل بضاعة من المستودع إلى السيارة' : 'Load Stock from Warehouse to Van',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+              padding: EdgeInsets.only(
+                left: 18,
+                right: 18,
+                top: 14,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.9,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      lang.isArabic ? 'تحميل بضاعة من المستودع إلى السيارة' : 'Load Stock from Warehouse to Van',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<ProductModel>(
                     isExpanded: true,
@@ -1130,12 +1165,13 @@ class _SalesmanLiveTrackingScreenState extends State<SalesmanLiveTrackingScreen>
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   // Helper metric widgets
   Widget _buildStockValueCol(String label, String value, Color color) {

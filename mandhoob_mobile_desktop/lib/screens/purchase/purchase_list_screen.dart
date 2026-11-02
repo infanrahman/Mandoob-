@@ -56,26 +56,6 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: Text(
-              lang.isArabic ? 'إدارة المشتريات وفواتير التوريد' : 'Purchases & Inward Stock',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.post_add_rounded),
-                tooltip: lang.isArabic ? 'تسجيل فاتورة شراء واردة' : 'Record Purchase Bill',
-                onPressed: () => _showCreatePurchaseBillDialog(context, db, auth, lang),
-              ),
-            ],
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showCreatePurchaseBillDialog(context, db, auth, lang),
-            icon: const Icon(Icons.add),
-            label: Text(lang.isArabic ? 'فاتورة شراء جديدة' : 'New Purchase Bill'),
-            backgroundColor: AppColors.purchaseBlue,
-            foregroundColor: Colors.white,
-          ),
           body: Column(
             children: [
               // 1. KPI Purchases Overview Banner
@@ -159,7 +139,14 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
                     hintText: lang.isArabic
                         ? 'ابحث برقم الفاتورة، اسم المورد أو طريقة الدفع...'
                         : 'Search bill #, supplier or payment mode...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
+                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                    prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.purchaseBlue),
+                    suffixIcon: _billSearchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () => setState(() => _billSearchQuery = ''),
+                          )
+                        : null,
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -170,6 +157,10 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppColors.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.purchaseBlue, width: 1.5),
                     ),
                   ),
                   onChanged: (val) => setState(() => _billSearchQuery = val),
@@ -351,6 +342,18 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
               ),
             ],
           ),
+          floatingActionButton: auth.can((p) => p.canCreatePurchase)
+              ? FloatingActionButton.extended(
+                  onPressed: () => _showCreatePurchaseBillDialog(context, db, auth, lang),
+                  backgroundColor: AppColors.purchaseBlue,
+                  elevation: 4,
+                  icon: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 20),
+                  label: Text(
+                    lang.isArabic ? 'فاتورة شراء جديدة' : '+ New Purchase Bill',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                )
+              : null,
         );
       },
     );
@@ -423,7 +426,8 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
         return StatefulBuilder(
@@ -434,18 +438,36 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
             final vat = subtotal * 0.15;
             final total = subtotal + vat;
 
-            return Padding(
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
               padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 20,
+                left: 18,
+                right: 18,
+                top: 14,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
               ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     Text(
                       lang.isArabic ? 'تسجيل فاتورة شراء واردة وتوريد المخزون' : 'Record Inward Purchase Bill',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

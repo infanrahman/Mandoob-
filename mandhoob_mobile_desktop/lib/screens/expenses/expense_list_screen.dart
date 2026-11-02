@@ -58,9 +58,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             _datePreset != DateFilterPreset.all;
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(lang.isArabic ? 'المصروفات وإدارة العهدة' : 'Expenses & Float Management'),
-          ),
           body: Column(
             children: [
               // Search & Filter Header
@@ -307,27 +304,44 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Padding(
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
               padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 20,
+                left: 18,
+                right: 18,
+                top: 14,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    lang.isArabic ? 'تسجيل سند صرف جديد' : 'Record New Van Expense',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.88,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      lang.isArabic ? 'تسجيل سند صرف جديد' : 'Record New Van Expense',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<ExpenseCategory>(
                     isExpanded: true,
@@ -401,10 +415,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 }

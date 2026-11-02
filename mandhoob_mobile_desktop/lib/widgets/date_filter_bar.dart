@@ -127,53 +127,63 @@ class DateFilterBar extends StatelessWidget {
             context,
             label: isArabic ? 'اليوم' : 'Today',
             preset: DateFilterPreset.today,
-            icon: Icons.today,
+            icon: Icons.today_rounded,
           ),
           const SizedBox(width: 6),
           _buildChip(
             context,
             label: isArabic ? 'أمس' : 'Yesterday',
             preset: DateFilterPreset.yesterday,
-            icon: Icons.history,
+            icon: Icons.history_rounded,
           ),
           const SizedBox(width: 6),
           _buildChip(
             context,
             label: isArabic ? 'هذا الأسبوع' : 'This Week',
             preset: DateFilterPreset.thisWeek,
-            icon: Icons.date_range,
+            icon: Icons.date_range_rounded,
           ),
           const SizedBox(width: 6),
           _buildChip(
             context,
             label: isArabic ? 'هذا الشهر' : 'This Month',
             preset: DateFilterPreset.thisMonth,
-            icon: Icons.calendar_month,
+            icon: Icons.calendar_month_rounded,
           ),
           const SizedBox(width: 6),
           // Custom Date Range Chip
           InkWell(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             onTap: () => _pickCustomRange(context),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 color: selectedPreset == DateFilterPreset.custom
                     ? AppColors.primary
-                    : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(20),
+                    : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: selectedPreset == DateFilterPreset.custom
-                      ? AppColors.primaryDark
-                      : Colors.grey.shade300,
+                      ? AppColors.primary
+                      : const Color(0xFFE2E8F0),
+                  width: 1,
                 ),
+                boxShadow: selectedPreset == DateFilterPreset.custom
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.25),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.edit_calendar,
+                    Icons.edit_calendar_rounded,
                     size: 14,
                     color: selectedPreset == DateFilterPreset.custom ? Colors.white : AppColors.primary,
                   ),
@@ -184,8 +194,8 @@ class DateFilterBar extends StatelessWidget {
                         : (isArabic ? 'تحديد فترة...' : 'Custom Range...'),
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: selectedPreset == DateFilterPreset.custom ? FontWeight.bold : FontWeight.w500,
-                      color: selectedPreset == DateFilterPreset.custom ? Colors.white : AppColors.textPrimary,
+                      fontWeight: selectedPreset == DateFilterPreset.custom ? FontWeight.bold : FontWeight.w600,
+                      color: selectedPreset == DateFilterPreset.custom ? Colors.white : const Color(0xFF334155),
                     ),
                   ),
                 ],
@@ -205,33 +215,43 @@ class DateFilterBar extends StatelessWidget {
   }) {
     final isSelected = selectedPreset == preset;
     return InkWell(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
       onTap: () => onPresetChanged(preset),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? AppColors.primary : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primaryDark : Colors.grey.shade300,
+            color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+            width: 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 13,
-              color: isSelected ? Colors.white : AppColors.textMuted,
+              size: 14,
+              color: isSelected ? Colors.white : const Color(0xFF64748B),
             ),
             const SizedBox(width: 5),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? Colors.white : const Color(0xFF334155),
               ),
             ),
           ],

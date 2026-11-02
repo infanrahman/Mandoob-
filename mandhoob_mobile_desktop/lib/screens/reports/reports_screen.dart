@@ -72,24 +72,28 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
         final portfolioAging = db.getPortfolioReceivablesAging();
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(lang.isArabic ? 'التقارير والإقرار الضريبي والائتمان' : 'Reports & Tax Returns'),
-            bottom: TabBar(
-              controller: _tabController,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white60,
-              indicatorColor: Colors.white,
-              isScrollable: true,
-              tabs: [
-                Tab(text: lang.isArabic ? 'الإقرار الضريبي (ZATCA)' : 'ZATCA Tax Return'),
-                Tab(text: lang.isArabic ? 'تقرير الائتمان وأعمار الديون (Aging)' : 'Aging Analysis'),
-                Tab(text: lang.isArabic ? 'دفتر اليومية (Day Book)' : 'Day Book'),
-                Tab(text: lang.isArabic ? 'أداء المندوبين (Van Reps)' : 'Salesman Performance'),
-              ],
-            ),
-          ),
           body: Column(
             children: [
+              // Sleek Modern TabBar Header
+              Container(
+                color: Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  indicatorColor: AppColors.primary,
+                  indicatorWeight: 3,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  tabs: [
+                    Tab(text: lang.isArabic ? 'الإقرار الضريبي (ZATCA)' : 'ZATCA Tax Return'),
+                    Tab(text: lang.isArabic ? 'أعمار الديون (Aging)' : 'Aging Analysis'),
+                    Tab(text: lang.isArabic ? 'دفتر اليومية (Day Book)' : 'Day Book'),
+                    Tab(text: lang.isArabic ? 'أداء المندوبين (Van Reps)' : 'Salesman Performance'),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, thickness: 1, color: AppColors.cardBorder),
               Container(
                 color: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 4),

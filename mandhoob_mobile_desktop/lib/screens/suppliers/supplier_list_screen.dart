@@ -50,25 +50,15 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: Text(
-              lang.isArabic ? 'إدارة الموردين والذمم الدائنة' : 'Suppliers & Payables',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.person_add_alt_1_rounded),
-                tooltip: lang.isArabic ? 'إضافة مورد جديد' : 'Add New Supplier',
-                onPressed: () => _showAddSupplierDialog(context, db, lang),
-              ),
-            ],
-          ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showAddSupplierDialog(context, db, lang),
-            icon: const Icon(Icons.add),
-            label: Text(lang.isArabic ? 'إضافة مورد' : 'New Supplier'),
+            icon: const Icon(Icons.person_add_alt_1, color: Colors.white, size: 20),
+            label: Text(
+              lang.isArabic ? 'إضافة مورد جديد' : '+ New Supplier',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            ),
             backgroundColor: AppColors.purchaseBlue,
-            foregroundColor: Colors.white,
+            elevation: 4,
           ),
           body: Column(
             children: [
@@ -153,7 +143,14 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                     hintText: lang.isArabic
                         ? 'بحث بالاسم، الجوال، الرقم الضريبي، السجل أو المدينة...'
                         : 'Search by name, phone, VAT, CR, or city...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
+                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                    prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.purchaseBlue),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () => setState(() => _searchQuery = ''),
+                          )
+                        : null,
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -164,6 +161,10 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppColors.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.purchaseBlue, width: 1.5),
                     ),
                   ),
                   onChanged: (val) => setState(() => _searchQuery = val),
@@ -423,29 +424,64 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
     final cityCtrl = TextEditingController(text: lang.isArabic ? 'الرياض' : 'Riyadh');
     final balanceCtrl = TextEditingController(text: '0.00');
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.business, color: AppColors.purchaseBlue),
-            const SizedBox(width: 8),
-            Text(
-              lang.isArabic ? 'إضافة مورد جديد' : 'Add New Supplier',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        content: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          left: 18,
+          right: 18,
+          top: 14,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(ctx).size.height * 0.9,
+        ),
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.purchaseBlue.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.business_rounded, color: AppColors.purchaseBlue, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    lang.isArabic ? 'إضافة مورد معتمد جديد' : 'Add New Supplier',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: nameArCtrl,
                 decoration: InputDecoration(
                   labelText: lang.isArabic ? 'اسم المورد (بالعربية) *' : 'Supplier Name (Arabic) *',
-                  prefixIcon: const Icon(Icons.business_outlined),
+                  prefixIcon: const Icon(Icons.business_outlined, size: 20),
                 ),
               ),
               const SizedBox(height: 10),
@@ -453,17 +489,33 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                 controller: nameEnCtrl,
                 decoration: InputDecoration(
                   labelText: lang.isArabic ? 'اسم المورد (بالإنجليزية)' : 'Supplier Name (English)',
-                  prefixIcon: const Icon(Icons.translate),
+                  prefixIcon: const Icon(Icons.translate, size: 20),
                 ),
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: lang.isArabic ? 'رقم الهاتف / الجوال *' : 'Phone Number *',
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        labelText: lang.isArabic ? 'رقم الهاتف *' : 'Phone *',
+                        prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: cityCtrl,
+                      decoration: InputDecoration(
+                        labelText: lang.isArabic ? 'المدينة' : 'City',
+                        prefixIcon: const Icon(Icons.location_city_outlined, size: 20),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               TextField(
@@ -472,87 +524,102 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                 maxLength: 15,
                 decoration: InputDecoration(
                   labelText: lang.isArabic ? 'الرقم الضريبي (15 رقم)' : 'VAT Number (15 digits)',
-                  prefixIcon: const Icon(Icons.confirmation_number_outlined),
+                  prefixIcon: const Icon(Icons.confirmation_number_outlined, size: 20),
                 ),
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: crCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: lang.isArabic ? 'رقم السجل التجاري' : 'Commercial Registration (CR)',
-                  prefixIcon: const Icon(Icons.receipt_long_outlined),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: crCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: lang.isArabic ? 'السجل التجاري' : 'CR Number',
+                        prefixIcon: const Icon(Icons.receipt_long_outlined, size: 20),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: balanceCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: lang.isArabic ? 'الرصيد الافتتاحي (ر.س)' : 'Opening Due (SAR)',
+                        prefixIcon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: cityCtrl,
-                decoration: InputDecoration(
-                  labelText: lang.isArabic ? 'المدينة' : 'City',
-                  prefixIcon: const Icon(Icons.location_city_outlined),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: balanceCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: lang.isArabic ? 'الرصيد الافتتاحي المستحق' : 'Opening Balance Due (SAR)',
-                  prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
-                ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(lang.isArabic ? 'إلغاء' : 'Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.purchaseBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () {
+                        if (nameArCtrl.text.trim().isEmpty || phoneCtrl.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                lang.isArabic ? 'يرجى إدخال اسم المورد ورقم الهاتف' : 'Please provide supplier name and phone',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        final newSupplier = SupplierModel(
+                          id: 'SUP-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+                          nameAr: nameArCtrl.text.trim(),
+                          nameEn: nameEnCtrl.text.trim().isNotEmpty ? nameEnCtrl.text.trim() : nameArCtrl.text.trim(),
+                          phone: phoneCtrl.text.trim(),
+                          vatNumber: vatCtrl.text.trim().isNotEmpty ? vatCtrl.text.trim() : null,
+                          crNumber: crCtrl.text.trim().isNotEmpty ? crCtrl.text.trim() : null,
+                          city: cityCtrl.text.trim(),
+                          openingBalance: double.tryParse(balanceCtrl.text.trim()) ?? 0.0,
+                          currentBalance: double.tryParse(balanceCtrl.text.trim()) ?? 0.0,
+                        );
+
+                        db.addSupplier(newSupplier);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              lang.isArabic ? 'تمت إضافة المورد بنجاح' : 'Supplier added successfully',
+                            ),
+                            backgroundColor: AppColors.saleGreen,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.check, size: 18),
+                      label: Text(
+                        lang.isArabic ? 'حفظ المورد' : 'Save Supplier',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(lang.isArabic ? 'إلغاء' : 'Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.purchaseBlue,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              if (nameArCtrl.text.trim().isEmpty || phoneCtrl.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      lang.isArabic ? 'يرجى إدخال اسم المورد ورقم الهاتف' : 'Please provide supplier name and phone',
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              final newSupplier = SupplierModel(
-                id: 'SUP-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-                nameAr: nameArCtrl.text.trim(),
-                nameEn: nameEnCtrl.text.trim().isNotEmpty ? nameEnCtrl.text.trim() : nameArCtrl.text.trim(),
-                phone: phoneCtrl.text.trim(),
-                vatNumber: vatCtrl.text.trim().isNotEmpty ? vatCtrl.text.trim() : null,
-                crNumber: crCtrl.text.trim().isNotEmpty ? crCtrl.text.trim() : null,
-                city: cityCtrl.text.trim(),
-                openingBalance: double.tryParse(balanceCtrl.text.trim()) ?? 0.0,
-                currentBalance: double.tryParse(balanceCtrl.text.trim()) ?? 0.0,
-              );
-
-              db.addSupplier(newSupplier);
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    lang.isArabic ? 'تمت إضافة المورد بنجاح' : 'Supplier added successfully',
-                  ),
-                  backgroundColor: AppColors.saleGreen,
-                ),
-              );
-            },
-            child: Text(lang.isArabic ? 'حفظ المورد' : 'Save Supplier'),
-          ),
-        ],
       ),
     );
   }

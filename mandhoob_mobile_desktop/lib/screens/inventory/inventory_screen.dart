@@ -34,6 +34,9 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -62,52 +65,59 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
         final nearExpiryCount = db.products.where((p) => p.isExpiringSoon).length;
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(lang.isArabic ? 'المخزون وسيارات التوزيع' : 'Stock & Van Inventory'),
-            actions: [
-              if (auth.can((p) => p.canManageInventory)) ...[
-                IconButton(
-                  icon: const Icon(Icons.add_box_outlined),
-                  tooltip: lang.isArabic ? 'إضافة صنف جديد' : 'Add New Product',
-                  onPressed: () => _showAddOrEditProductDialog(context, null, lang, db),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.tune),
-                  tooltip: lang.isArabic ? 'تسوية جردية' : 'Stock Adjustment',
-                  onPressed: () => _showStockAdjustmentDialog(context, null, lang, db, auth),
-                ),
-              ],
-            ],
-            bottom: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              indicatorColor: Colors.white,
-              indicatorWeight: 3,
-              tabAlignment: TabAlignment.start,
-              tabs: [
-                Tab(
-                  icon: const Icon(Icons.inventory_2_outlined, size: 20),
-                  text: lang.isArabic ? 'أرصدة الأصناف' : 'Stock Levels',
-                ),
-                Tab(
-                  icon: const Icon(Icons.local_shipping_outlined, size: 20),
-                  text: lang.isArabic ? 'بضاعة السيارات' : 'Van Inventory',
-                ),
-                Tab(
-                  icon: const Icon(Icons.swap_horiz, size: 20),
-                  text: lang.isArabic ? 'سجل التحميل والنقل' : 'Transfers Log',
-                ),
-                Tab(
-                  icon: const Icon(Icons.fact_check_outlined, size: 20),
-                  text: lang.isArabic ? 'تسويات الجرد' : 'Adjustments',
-                ),
-              ],
-            ),
-          ),
           body: Column(
             children: [
+              // Sleek Modern TabBar Header
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TabBar(
+                        controller: _tabController,
+                        isScrollable: true,
+                        labelColor: AppColors.primary,
+                        unselectedLabelColor: AppColors.textSecondary,
+                        indicatorColor: AppColors.primary,
+                        indicatorWeight: 3,
+                        tabAlignment: TabAlignment.start,
+                        tabs: [
+                          Tab(
+                            icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                            text: lang.isArabic ? 'أرصدة الأصناف' : 'Stock Levels',
+                          ),
+                          Tab(
+                            icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                            text: lang.isArabic ? 'بضاعة السيارات' : 'Van Inventory',
+                          ),
+                          Tab(
+                            icon: const Icon(Icons.swap_horiz, size: 18),
+                            text: lang.isArabic ? 'سجل التحميل والنقل' : 'Transfers Log',
+                          ),
+                          Tab(
+                            icon: const Icon(Icons.fact_check_outlined, size: 18),
+                            text: lang.isArabic ? 'تسويات الجرد' : 'Adjustments',
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (auth.can((p) => p.canManageInventory)) ...[
+                      IconButton(
+                        icon: const Icon(Icons.add_box_outlined, color: AppColors.primary),
+                        tooltip: lang.isArabic ? 'إضافة صنف جديد' : 'Add Product',
+                        onPressed: () => _showAddOrEditProductDialog(context, null, lang, db),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.tune, color: AppColors.primary),
+                        tooltip: lang.isArabic ? 'تسوية جردية' : 'Stock Adjustment',
+                        onPressed: () => _showStockAdjustmentDialog(context, null, lang, db, auth),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Divider(height: 1, thickness: 1, color: AppColors.cardBorder),
               // Inventory Quick Summary Dashboard Banner
               _buildSummaryHeader(
                 totalItems: db.products.length,
@@ -133,15 +143,40 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showStockTransferDialog(context, lang, db, auth),
-            backgroundColor: AppColors.primary,
-            icon: const Icon(Icons.move_to_inbox, color: Colors.white),
-            label: Text(
-              lang.isArabic ? 'نقل / تحميل بضاعة' : 'Transfer / Load Stock',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
+          floatingActionButton: auth.can((p) => p.canManageInventory)
+              ? (_tabController.index == 0
+                  ? FloatingActionButton.extended(
+                      onPressed: () => _showAddOrEditProductDialog(context, null, lang, db),
+                      backgroundColor: AppColors.primary,
+                      elevation: 4,
+                      icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                      label: Text(
+                        lang.isArabic ? 'إضافة صنف جديد' : '+ Add Product',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    )
+                  : (_tabController.index == 3
+                      ? FloatingActionButton.extended(
+                          onPressed: () => _showStockAdjustmentDialog(context, null, lang, db, auth),
+                          backgroundColor: Colors.teal.shade700,
+                          elevation: 4,
+                          icon: const Icon(Icons.tune, color: Colors.white, size: 20),
+                          label: Text(
+                            lang.isArabic ? 'تسوية جردية' : '+ Stock Adjustment',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        )
+                      : FloatingActionButton.extended(
+                          onPressed: () => _showStockTransferDialog(context, lang, db, auth),
+                          backgroundColor: AppColors.primary,
+                          elevation: 4,
+                          icon: const Icon(Icons.move_to_inbox, color: Colors.white, size: 20),
+                          label: Text(
+                            lang.isArabic ? 'نقل / تحميل بضاعة' : '+ Transfer Stock',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        )))
+              : null,
         );
       },
     );
@@ -1138,14 +1173,21 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Padding(
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
           padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            left: 18,
+            right: 18,
+            top: 14,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.9,
           ),
           child: SingleChildScrollView(
             child: Form(
@@ -1154,6 +1196,17 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1385,7 +1438,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -1393,18 +1446,36 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
             final newQty = double.tryParse(actualQtyCtrl.text) ?? prevQty;
             final diff = newQty - prevQty;
 
-            return Padding(
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
               padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+                left: 18,
+                right: 18,
+                top: 14,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.9,
               ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
                       lang.isArabic ? 'تسوية جردية لمخزون الصنف' : 'Stock Adjustment & Physical Audit',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1601,25 +1672,43 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final fromStock = selectedProduct.getStockFor(fromWarehouseId);
             final toStock = selectedProduct.getStockFor(toWarehouseId);
 
-            return Padding(
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
               padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+                left: 18,
+                right: 18,
+                top: 14,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.9,
               ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
                       lang.isArabic ? 'سند تحويل بضاعة بين المستودعات والسيارات' : 'Stock Transfer Order',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1785,32 +1874,38 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
       context: context,
       builder: (ctx) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           title: Text(lang.isArabic ? 'تفريغ واسترجاع مخزون السيارة المسائي' : 'Evening Van Stock Reconciliation'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                lang.isArabic
-                    ? 'سيتم استرجاع جميع الأصناف المتبقية في ${van.nameAr} وإعادتها إلى المستودع الرئيسي (WH-MAIN) لإغلاق جرد اليوم:'
-                    : 'All remaining items in ${van.nameEn} will be returned to Main Warehouse (WH-MAIN):',
-                style: const TextStyle(fontSize: 12),
-              ),
-              const SizedBox(height: 12),
-              ...loadedItems.map((p) {
-                final qty = p.stockByWarehouse[van.id] ?? 0.0;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 3),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(child: Text(lang.isArabic ? p.nameAr : p.nameEn, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
-                      Text('${qty.toInt()} ${p.baseUnit.split(" - ")[0]}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ],
+          content: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.6),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    lang.isArabic
+                        ? 'سيتم استرجاع جميع الأصناف المتبقية في ${van.nameAr} وإعادتها إلى المستودع الرئيسي (WH-MAIN) لإغلاق جرد اليوم:'
+                        : 'All remaining items in ${van.nameEn} will be returned to Main Warehouse (WH-MAIN):',
+                    style: const TextStyle(fontSize: 12),
                   ),
-                );
-              }),
-            ],
+                  const SizedBox(height: 12),
+                  ...loadedItems.map((p) {
+                    final qty = p.stockByWarehouse[van.id] ?? 0.0;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(child: Text(lang.isArabic ? p.nameAr : p.nameEn, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
+                          Text('${qty.toInt()} ${p.baseUnit.split(" - ")[0]}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
           ),
           actions: [
             TextButton(

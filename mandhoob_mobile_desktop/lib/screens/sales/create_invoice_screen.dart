@@ -641,9 +641,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -651,21 +649,40 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             final lang = AppLanguage();
             final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    lang.isArabic ? 'اختر الصنف من المخزون' : 'Select Product from Stock',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+              padding: EdgeInsets.only(
+                left: 18,
+                right: 18,
+                top: 14,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      lang.isArabic ? 'اختر الصنف من المخزون' : 'Select Product from Stock',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<ProductModel>(
                     isExpanded: true,
@@ -785,12 +802,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   void _saveAndPrintInvoice(BuildContext context, bool triggerPrint) {
     if (_selectedCustomer == null || _items.isEmpty) return;

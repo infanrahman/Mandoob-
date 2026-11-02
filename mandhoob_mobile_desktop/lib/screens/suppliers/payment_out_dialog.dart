@@ -36,7 +36,9 @@ class _PaymentOutDialogState extends State<PaymentOutDialog> {
     final balanceAfter = (widget.supplier.currentBalance - _amount).clamp(0.0, 9999999.0);
 
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      scrollable: true,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       title: Row(
         children: [
           const CircleAvatar(

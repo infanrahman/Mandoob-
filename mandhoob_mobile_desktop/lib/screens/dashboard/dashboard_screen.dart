@@ -516,40 +516,66 @@ class DashboardScreen extends StatelessWidget {
 
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 24),
-                  const SizedBox(width: 10),
-                  Text(
-                    lang.isArabic ? 'تفاصيل نقد الصندوق والعهدة الحالية' : 'Cash in Hand & Float Breakdown',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 14,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ],
-              ),
-              const Divider(height: 24),
-              _buildCashRow(lang.isArabic ? 'الرصيد الافتتاحي للعهدة (Opening Float):' : 'Opening Float:', '2,500.00 $curr', Colors.black87),
-              const SizedBox(height: 8),
-              _buildCashRow(lang.isArabic ? '+ مبيعات نقدية محصلة (Cash Sales):' : '+ Cash Sales:', '+ ${cashSales.toStringAsFixed(2)} $curr', Colors.green),
-              const SizedBox(height: 8),
-              _buildCashRow(lang.isArabic ? '+ تحصيلات سندات القبض (Collections):' : '+ Cash Collections:', '+ ${cashCollections.toStringAsFixed(2)} $curr', Colors.green),
-              const SizedBox(height: 8),
-              _buildCashRow(lang.isArabic ? '- مصروفات مسددة نقداً (Cash Expenses):' : '- Cash Expenses:', '- ${cashExpenses.toStringAsFixed(2)} $curr', Colors.red),
-              const Divider(height: 20),
-              _buildCashRow(
-                lang.isArabic ? 'صافي النقد الفعلي بالصندوق (Net Cash):' : 'Net Cash in Hand:',
-                '${db.cashInHandTotal.toStringAsFixed(2)} $curr',
-                AppColors.primary,
-                isBold: true,
-              ),
-            ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    const Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 24),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        lang.isArabic ? 'تفاصيل نقد الصندوق والعهدة الحالية' : 'Cash in Hand & Float Breakdown',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+                _buildCashRow(lang.isArabic ? 'الرصيد الافتتاحي للعهدة (Opening Float):' : 'Opening Float:', '2,500.00 $curr', Colors.black87),
+                const SizedBox(height: 8),
+                _buildCashRow(lang.isArabic ? '+ مبيعات نقدية محصلة (Cash Sales):' : '+ Cash Sales:', '+ ${cashSales.toStringAsFixed(2)} $curr', Colors.green),
+                const SizedBox(height: 8),
+                _buildCashRow(lang.isArabic ? '+ تحصيلات سندات القبض (Collections):' : '+ Cash Collections:', '+ ${cashCollections.toStringAsFixed(2)} $curr', Colors.green),
+                const SizedBox(height: 8),
+                _buildCashRow(lang.isArabic ? '- مصروفات مسددة نقداً (Cash Expenses):' : '- Cash Expenses:', '- ${cashExpenses.toStringAsFixed(2)} $curr', Colors.red),
+                const Divider(height: 20),
+                _buildCashRow(
+                  lang.isArabic ? 'صافي النقد الفعلي بالصندوق (Net Cash):' : 'Net Cash in Hand:',
+                  '${db.cashInHandTotal.toStringAsFixed(2)} $curr',
+                  AppColors.primary,
+                  isBold: true,
+                ),
+              ],
+            ),
           ),
         );
       },
