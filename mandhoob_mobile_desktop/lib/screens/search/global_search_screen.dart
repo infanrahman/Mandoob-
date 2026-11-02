@@ -3,7 +3,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
 import '../../models/invoice_model.dart';
+import '../../models/product_model.dart';
 import '../sales/invoice_detail_screen.dart';
+import '../customers/customer_detail_screen.dart';
 
 class GlobalSearchScreen extends StatefulWidget {
   const GlobalSearchScreen({super.key});
@@ -225,6 +227,12 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                                   color: c.currentBalance > 0 ? AppColors.expenseRed : Colors.green,
                                 ),
                               ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => CustomerDetailScreen(customer: c)),
+                                );
+                              },
                             ),
                           )),
                       const SizedBox(height: 14),
@@ -248,6 +256,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                                 '${p.retailPrice.toStringAsFixed(2)} $curr',
                                 style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
+                              onTap: () => _showProductStockBreakdown(context, p, db, lang, curr),
                             ),
                           )),
                     ],
@@ -261,6 +270,89 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                       ),
                   ],
                 ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showProductStockBreakdown(
+    BuildContext context,
+    ProductModel product,
+    DatabaseService db,
+    AppLanguage lang,
+    String curr,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.inventory_2, color: AppColors.secondary, size: 24),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(lang.isArabic ? product.nameAr : product.nameEn, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('SKU: ${product.sku} • Barcode: ${product.barcode}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 20),
+              Text(
+                lang.isArabic ? 'توزيع الرصيد في المستودعات والسيارات:' : 'Stock Distribution per Location:',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              ...db.warehouses.map((w) {
+                final stock = product.stockByWarehouse[w.id] ?? 0.0;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(w.isVan ? Icons.local_shipping : Icons.warehouse, size: 16, color: w.isVan ? AppColors.primary : Colors.grey),
+                          const SizedBox(width: 8),
+                          Text(w.nameAr, style: const TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                      Text(
+                        '${stock.toInt()} ${product.baseUnit}',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: stock > 0 ? AppColors.primaryDark : Colors.red),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const Divider(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(lang.isArabic ? 'سعر الجملة:' : 'Wholesale:'),
+                  Text('${product.wholesalePrice.toStringAsFixed(2)} $curr', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(lang.isArabic ? 'سعر البيع بالتجزئة (شامل الضريبة):' : 'Retail Price (Incl. VAT):'),
+                  Text('${product.retailPrice.toStringAsFixed(2)} $curr', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.saleGreen)),
+                ],
               ),
             ],
           ),

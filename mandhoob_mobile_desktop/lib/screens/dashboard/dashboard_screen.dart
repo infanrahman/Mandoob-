@@ -5,6 +5,7 @@ import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import '../../models/invoice_model.dart';
+import '../../models/payment_voucher_model.dart';
 import '../sales/create_invoice_screen.dart';
 import '../sales/invoice_detail_screen.dart';
 import 'van_operations_hub_screen.dart';
@@ -152,12 +153,12 @@ class DashboardScreen extends StatelessWidget {
                           : (lang.isArabic ? 'خزينة الفرع' : 'Branch Float Safe'),
                       icon: Icons.account_balance_wallet,
                       color: AppColors.primary,
-                      onTap: () {},
+                      onTap: () => _showCashBreakdownModal(context, db, lang, curr, isSalesman),
                     ),
                     if (!isSalesman) ...[
                       _buildKpiCard(
                         title: lang.isArabic ? 'غرفة العمليات' : 'Van Ops Hub',
-                        value: lang.isArabic ? '2 سيارات نشطة' : '2 Active Vans',
+                        value: '${db.salesmenProgress.length} ${lang.isArabic ? "سيارات نشطة" : "Active Vans"}',
                         subtitle: lang.isArabic ? 'متابعة المسارات' : 'Live Stop Tracking',
                         icon: Icons.alt_route,
                         color: Colors.purple,
@@ -179,7 +180,7 @@ class DashboardScreen extends StatelessWidget {
                     ] else ...[
                       _buildKpiCard(
                         title: lang.isArabic ? 'بضاعة السيارة' : 'Van Stock Value',
-                        value: '${db.getVanStockValue('VAN-01').toStringAsFixed(2)} $curr',
+                        value: '${db.getVanStockValue(auth.currentUser.assignedVanId ?? "VAN-01").toStringAsFixed(2)} $curr',
                         subtitle: lang.isArabic ? 'المخزون الميداني' : 'Active Mobile Stock',
                         icon: Icons.inventory_2,
                         color: AppColors.secondary,
@@ -187,7 +188,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       _buildKpiCard(
                         title: lang.isArabic ? 'محطات اليوم' : "Today's Stops",
-                        value: lang.isArabic ? '4 محطات' : '4 Route Stops',
+                        value: '${db.customers.where((c) => (c.routeArea?.contains("شمال") ?? false) || (c.routeArea?.contains("North") ?? false)).length} ${lang.isArabic ? "محطات" : "Route Stops"}',
                         subtitle: lang.isArabic ? 'مسار شمال الرياض' : 'Riyadh North Route',
                         icon: Icons.alt_route,
                         color: AppColors.accent,
@@ -491,6 +492,77 @@ class DashboardScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 1,
       ),
+    );
+  }
+
+  void _showCashBreakdownModal(
+    BuildContext context,
+    DatabaseService db,
+    AppLanguage lang,
+    String curr,
+    bool isSalesman,
+  ) {
+    final cashSales = db.invoices
+        .where((i) => i.paymentMethod == PaymentMethod.cash && i.type != InvoiceType.salesReturn)
+        .fold(0.0, (sum, i) => sum + i.grandTotal);
+
+    final cashCollections = db.paymentVouchers
+        .where((v) => v.paymentMode == VoucherPaymentMode.cash)
+        .fold(0.0, (sum, v) => sum + v.amount);
+
+    final cashExpenses = db.expenses
+        .where((e) => e.paymentMode.toLowerCase().contains('cash') || e.paymentMode.contains('نقد'))
+        .fold(0.0, (sum, e) => sum + e.totalWithVat);
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 24),
+                  const SizedBox(width: 10),
+                  Text(
+                    lang.isArabic ? 'تفاصيل نقد الصندوق والعهدة الحالية' : 'Cash in Hand & Float Breakdown',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              _buildCashRow(lang.isArabic ? 'الرصيد الافتتاحي للعهدة (Opening Float):' : 'Opening Float:', '2,500.00 $curr', Colors.black87),
+              const SizedBox(height: 8),
+              _buildCashRow(lang.isArabic ? '+ مبيعات نقدية محصلة (Cash Sales):' : '+ Cash Sales:', '+ ${cashSales.toStringAsFixed(2)} $curr', Colors.green),
+              const SizedBox(height: 8),
+              _buildCashRow(lang.isArabic ? '+ تحصيلات سندات القبض (Collections):' : '+ Cash Collections:', '+ ${cashCollections.toStringAsFixed(2)} $curr', Colors.green),
+              const SizedBox(height: 8),
+              _buildCashRow(lang.isArabic ? '- مصروفات مسددة نقداً (Cash Expenses):' : '- Cash Expenses:', '- ${cashExpenses.toStringAsFixed(2)} $curr', Colors.red),
+              const Divider(height: 20),
+              _buildCashRow(
+                lang.isArabic ? 'صافي النقد الفعلي بالصندوق (Net Cash):' : 'Net Cash in Hand:',
+                '${db.cashInHandTotal.toStringAsFixed(2)} $curr',
+                AppColors.primary,
+                isBold: true,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCashRow(String label, String value, Color color, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: isBold ? 13 : 12, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+        Text(value, style: TextStyle(fontSize: isBold ? 15 : 12, fontWeight: FontWeight.bold, color: color)),
+      ],
     );
   }
 }

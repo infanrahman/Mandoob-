@@ -13,139 +13,13 @@ class VanOperationsHubScreen extends StatefulWidget {
 }
 
 class _VanOperationsHubScreenState extends State<VanOperationsHubScreen> {
-  late List<VanSalesmanProgressModel> _salesmenProgress;
-
-  @override
-  void initState() {
-    super.initState();
-    _salesmenProgress = [
-      VanSalesmanProgressModel(
-        salesmanId: 'USR-003',
-        salesmanName: 'محمد الدوسري (Van 1)',
-        phone: '0559876543',
-        vanId: 'VAN-01',
-        vanName: 'سيارة 1 - الرياض شمال',
-        vehiclePlateNumber: 'أ ب ج 4321',
-        date: DateTime.now(),
-        dailySalesTarget: 6000.0,
-        actualSalesAchieved: 4850.0,
-        dailyCollectionTarget: 3500.0,
-        actualCollectionsAchieved: 2500.0,
-        assignedRouteName: 'مسار شمال الرياض (السليمانية، العليا، الورود)',
-        morningOpeningStockValue: 12500.0,
-        totalSalesStockValue: 4850.0,
-        returnsStockValue: 0.0,
-        remainingEveningStockValue: 7650.0,
-        routeStops: [
-          CustomerRouteStop(
-            customerId: 'CUST-101',
-            customerNameAr: 'أسواق التميمي - فرع السليمانية',
-            district: 'السليمانية',
-            phone: '0501122334',
-            currentBalance: 7500.0,
-            creditLimit: 30000.0,
-            sequenceOrder: 1,
-            status: StopVisitStatus.visited,
-            visitedAt: DateTime.now().subtract(const Duration(hours: 3)),
-            invoiceAmount: 2400.0,
-            collectedAmount: 1500.0,
-          ),
-          CustomerRouteStop(
-            customerId: 'CUST-102',
-            customerNameAr: 'تموينات الأمانة الحديثة',
-            district: 'العليا',
-            phone: '0554433221',
-            currentBalance: 3200.0,
-            creditLimit: 10000.0,
-            sequenceOrder: 2,
-            status: StopVisitStatus.visited,
-            visitedAt: DateTime.now().subtract(const Duration(hours: 1)),
-            invoiceAmount: 1450.0,
-            collectedAmount: 1000.0,
-          ),
-          CustomerRouteStop(
-            customerId: 'CUST-104',
-            customerNameAr: 'ميني ماركت النور',
-            district: 'الورود',
-            phone: '0560001122',
-            currentBalance: 1200.0,
-            creditLimit: 5000.0,
-            sequenceOrder: 3,
-            status: StopVisitStatus.pending,
-          ),
-        ],
-        settlement: DailyVanSettlement(
-          openingCashFloat: 500.0,
-          totalCashSales: 2850.0,
-          totalMadaSales: 1200.0,
-          totalCreditSales: 800.0,
-          totalCollections: 2500.0,
-          totalVanExpenses: 150.0, // Gas
-          expectedCashHandover: 500.0 + 2850.0 + 2500.0 - 150.0, // 5700 SAR
-        ),
-      ),
-      VanSalesmanProgressModel(
-        salesmanId: 'USR-005',
-        salesmanName: 'أحمد الغامدي (Van 2)',
-        phone: '0551122445',
-        vanId: 'VAN-02',
-        vanName: 'سيارة 2 - الرياض شرق',
-        vehiclePlateNumber: 'د ر س 9876',
-        date: DateTime.now(),
-        dailySalesTarget: 5000.0,
-        actualSalesAchieved: 3100.0,
-        dailyCollectionTarget: 2000.0,
-        actualCollectionsAchieved: 1200.0,
-        assignedRouteName: 'مسار شرق الرياض (الروضة، النسيم، القدس)',
-        morningOpeningStockValue: 9800.0,
-        totalSalesStockValue: 3100.0,
-        returnsStockValue: 0.0,
-        remainingEveningStockValue: 6700.0,
-        routeStops: [
-          CustomerRouteStop(
-            customerId: 'CUST-103',
-            customerNameAr: 'مجمع أسواق الجزيرة',
-            district: 'الروضة',
-            phone: '0569988776',
-            currentBalance: 12500.0,
-            creditLimit: 20000.0,
-            sequenceOrder: 1,
-            status: StopVisitStatus.visited,
-            visitedAt: DateTime.now().subtract(const Duration(hours: 4)),
-            invoiceAmount: 3100.0,
-            collectedAmount: 1200.0,
-          ),
-          CustomerRouteStop(
-            customerId: 'CUST-105',
-            customerNameAr: 'بقالة الوفاء',
-            district: 'النسيم',
-            phone: '0543322110',
-            currentBalance: 800.0,
-            creditLimit: 4000.0,
-            sequenceOrder: 2,
-            status: StopVisitStatus.pending,
-          ),
-        ],
-        settlement: DailyVanSettlement(
-          openingCashFloat: 300.0,
-          totalCashSales: 1600.0,
-          totalMadaSales: 1500.0,
-          totalCreditSales: 0.0,
-          totalCollections: 1200.0,
-          totalVanExpenses: 120.0,
-          expectedCashHandover: 300.0 + 1600.0 + 1200.0 - 120.0, // 2980 SAR
-        ),
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: Listenable.merge([DatabaseService(), AppLanguage()]),
       builder: (context, _) {
         final db = DatabaseService();
-        final list = db.salesmenProgress.isNotEmpty ? db.salesmenProgress : _salesmenProgress;
+        final list = db.salesmenProgress;
         final lang = AppLanguage();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
         final totalFleetSales = list.fold(0.0, (sum, v) => sum + v.actualSalesAchieved);
@@ -232,9 +106,19 @@ class _VanOperationsHubScreenState extends State<VanOperationsHubScreen> {
                     final prog = list[index];
 
                     return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SalesmanLiveTrackingScreen(progress: prog),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Wrap(
@@ -362,8 +246,9 @@ class _VanOperationsHubScreenState extends State<VanOperationsHubScreen> {
                           ],
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  );
+                },
                 ),
               ],
             ),

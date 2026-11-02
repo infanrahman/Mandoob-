@@ -54,4 +54,56 @@ class ProductModel {
     final daysRemaining = expiryDate!.difference(DateTime.now()).inDays;
     return daysRemaining <= 30; // Expiring within 30 days
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'sku': sku,
+      'barcode': barcode,
+      'nameAr': nameAr,
+      'nameEn': nameEn,
+      'category': category,
+      'baseUnit': baseUnit,
+      'secondaryUnit': secondaryUnit,
+      'conversionFactor': conversionFactor,
+      'costPrice': costPrice,
+      'wholesalePrice': wholesalePrice,
+      'retailPrice': retailPrice,
+      'vatRatePercent': vatRatePercent,
+      'minStockAlert': minStockAlert,
+      'stockByWarehouse': stockByWarehouse,
+      'batchNumber': batchNumber,
+      'expiryDate': expiryDate?.toIso8601String(),
+    };
+  }
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    final rawStock = json['stockByWarehouse'];
+    final Map<String, double> parsedStock = {};
+    if (rawStock is Map) {
+      rawStock.forEach((k, v) {
+        parsedStock[k.toString()] = (v as num).toDouble();
+      });
+    }
+
+    return ProductModel(
+      id: json['id'] as String,
+      sku: json['sku'] as String? ?? '',
+      barcode: json['barcode'] as String? ?? '',
+      nameAr: json['nameAr'] as String,
+      nameEn: json['nameEn'] as String,
+      category: json['category'] as String? ?? 'عام - General',
+      baseUnit: json['baseUnit'] as String? ?? 'حبة',
+      secondaryUnit: json['secondaryUnit'] as String?,
+      conversionFactor: (json['conversionFactor'] as num?)?.toDouble() ?? 1.0,
+      costPrice: (json['costPrice'] as num?)?.toDouble() ?? 0.0,
+      wholesalePrice: (json['wholesalePrice'] as num?)?.toDouble() ?? 0.0,
+      retailPrice: (json['retailPrice'] as num?)?.toDouble() ?? 0.0,
+      vatRatePercent: (json['vatRatePercent'] as num?)?.toDouble() ?? 15.0,
+      minStockAlert: (json['minStockAlert'] as num?)?.toDouble() ?? 10.0,
+      stockByWarehouse: parsedStock,
+      batchNumber: json['batchNumber'] as String?,
+      expiryDate: json['expiryDate'] != null ? DateTime.tryParse(json['expiryDate'] as String) : null,
+    );
+  }
 }

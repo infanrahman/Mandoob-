@@ -12,74 +12,19 @@ class UserManagementScreen extends StatefulWidget {
 }
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
-  late List<UserModel> _companyUsers;
-
-  @override
-  void initState() {
-    super.initState();
-    final db = DatabaseService();
-    _companyUsers = [
-      UserModel(
-        id: 'USR-001',
-        companyId: 'COMP-001',
-        companyNameAr: db.companyNameAr,
-        name: 'سلطان القحطاني - Sultan Al-Qahtani',
-        email: 'sultan@mandhoob.sa',
-        phone: '0501234567',
-        role: UserRole.superAdmin,
-      ),
-      UserModel(
-        id: 'USR-002',
-        companyId: 'COMP-001',
-        companyNameAr: db.companyNameAr,
-        name: 'فهد العتيبي - Fahad Al-Otaibi',
-        email: 'fahad.mgr@mandhoob.sa',
-        phone: '0541112233',
-        role: UserRole.admin,
-      ),
-      UserModel(
-        id: 'USR-003',
-        companyId: 'COMP-001',
-        companyNameAr: db.companyNameAr,
-        name: 'محمد الدوسري - Mohammed Al-Dosari',
-        email: 'mohammed.sales@mandhoob.sa',
-        phone: '0559876543',
-        role: UserRole.salesman,
-        assignedVanId: 'VAN-01',
-        assignedVanName: 'سيارة 1 - الرياض شمال',
-      ),
-      UserModel(
-        id: 'USR-004',
-        companyId: 'COMP-001',
-        companyNameAr: db.companyNameAr,
-        name: 'عبدالله الشهري - Abdullah Al-Shehri',
-        email: 'abdullah.acc@mandhoob.sa',
-        phone: '0567778899',
-        role: UserRole.accountant,
-      ),
-      UserModel(
-        id: 'USR-005',
-        companyId: 'COMP-001',
-        companyNameAr: db.companyNameAr,
-        name: 'أحمد الغامدي - Ahmed Al-Ghamdi',
-        email: 'ahmed.sales@mandhoob.sa',
-        phone: '0551122445',
-        role: UserRole.salesman,
-        assignedVanId: 'VAN-02',
-        assignedVanName: 'سيارة 2 - الرياض شرق',
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
-    final db = DatabaseService();
+    return ListenableBuilder(
+      listenable: DatabaseService(),
+      builder: (context, _) {
+        final db = DatabaseService();
+        final companyUsers = db.companyUsers;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('إدارة مستخدمي المنشأة والصلاحيات'),
-      ),
-      body: SingleChildScrollView(
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('إدارة مستخدمي المنشأة والصلاحيات'),
+          ),
+          body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +70,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'فريق العمل المسجل (${_companyUsers.length} مستخدمين)',
+                  'فريق العمل المسجل (${companyUsers.length} مستخدمين)',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 ElevatedButton.icon(
@@ -145,10 +90,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _companyUsers.length,
+              itemCount: companyUsers.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
-                final user = _companyUsers[index];
+                final user = companyUsers[index];
                 Color roleColor = Colors.blue;
                 IconData roleIcon = Icons.badge;
 
@@ -236,7 +181,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               itemBuilder: (ctx) => [
                                 const PopupMenuItem(value: 'switch', child: Text('تسجيل الدخول بهذا المستخدم')),
                                 const PopupMenuItem(value: 'edit', child: Text('تعديل الصلاحيات')),
-                                const PopupMenuItem(value: 'disable', child: Text('تعطيل الحساب')),
+                                const PopupMenuItem(value: 'delete', child: Text('حذف المستخدم', style: TextStyle(color: Colors.red))),
                               ],
                               onSelected: (val) {
                                 if (val == 'switch') {
@@ -245,6 +190,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                     SnackBar(
                                       content: Text('تم التبديل إلى المستخدم: ${user.name}'),
                                       backgroundColor: AppColors.saleGreen,
+                                    ),
+                                  );
+                                } else if (val == 'delete') {
+                                  db.deleteCompanyUser(user.id);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('تم حذف المستخدم: ${user.name} بنجاح'),
+                                      backgroundColor: AppColors.expenseRed,
                                     ),
                                   );
                                 }
@@ -279,6 +232,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         ),
       ),
     );
+  },
+);
   }
 
   void _showAddUserDialog(BuildContext context) {
@@ -362,23 +317,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       onPressed: () {
                         if (nameController.text.trim().isEmpty) return;
 
-                        setState(() {
-                          _companyUsers.add(
-                            UserModel(
-                              id: 'USR-${DateTime.now().millisecondsSinceEpoch}',
-                              companyId: 'COMP-001',
-                              companyNameAr: db.companyNameAr,
-                              name: nameController.text.trim(),
-                              email: emailController.text.trim(),
-                              phone: phoneController.text.trim(),
-                              role: selectedRole,
-                              assignedVanId: selectedRole == UserRole.salesman ? selectedVanId : null,
-                              assignedVanName: selectedRole == UserRole.salesman
-                                  ? db.warehouses.firstWhere((w) => w.id == selectedVanId).nameAr
-                                  : null,
-                            ),
-                          );
-                        });
+                        db.addCompanyUser(
+                          UserModel(
+                            id: 'USR-${DateTime.now().millisecondsSinceEpoch}',
+                            companyId: 'COMP-001',
+                            companyNameAr: db.companyNameAr,
+                            name: nameController.text.trim(),
+                            email: emailController.text.trim(),
+                            phone: phoneController.text.trim(),
+                            role: selectedRole,
+                            assignedVanId: selectedRole == UserRole.salesman ? selectedVanId : null,
+                            assignedVanName: selectedRole == UserRole.salesman
+                                ? db.warehouses.firstWhere((w) => w.id == selectedVanId).nameAr
+                                : null,
+                          ),
+                        );
 
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(

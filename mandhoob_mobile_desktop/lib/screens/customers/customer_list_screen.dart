@@ -3,6 +3,8 @@ import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
 import '../../models/customer_model.dart';
+import '../../models/invoice_model.dart';
+import '../sales/create_invoice_screen.dart';
 import 'customer_detail_screen.dart';
 
 class CustomerListScreen extends StatefulWidget {
@@ -236,6 +238,28 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                                   ),
                                   Row(
                                     children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.add_shopping_cart, size: 18, color: AppColors.saleGreen),
+                                        tooltip: lang.isArabic ? 'إصدار فاتورة للعميل' : 'New Invoice',
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => CreateInvoiceScreen(
+                                                defaultType: cust.isVatRegistered
+                                                    ? InvoiceType.taxInvoice
+                                                    : InvoiceType.simplifiedTaxInvoice,
+                                                preselectedCustomer: cust,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textSecondary),
+                                        tooltip: lang.isArabic ? 'تعديل البيانات' : 'Edit Customer',
+                                        onPressed: () => _showAddOrEditCustomerDialog(context, cust, db, lang),
+                                      ),
                                       Text(
                                         lang.isArabic ? 'كشف الحساب' : 'Statement',
                                         style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
@@ -256,7 +280,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () {},
+            onPressed: () => _showAddOrEditCustomerDialog(context, null, db, lang),
             backgroundColor: AppColors.primary,
             elevation: 4,
             icon: const Icon(Icons.person_add, color: Colors.white, size: 18),
@@ -267,6 +291,300 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _showAddOrEditCustomerDialog(
+    BuildContext context,
+    CustomerModel? existingCustomer,
+    DatabaseService db,
+    AppLanguage lang,
+  ) {
+    final isEdit = existingCustomer != null;
+    final nameArController = TextEditingController(text: existingCustomer?.nameAr ?? '');
+    final nameEnController = TextEditingController(text: existingCustomer?.nameEn ?? '');
+    final phoneController = TextEditingController(text: existingCustomer?.phone ?? '');
+    final vatController = TextEditingController(text: existingCustomer?.vatNumber ?? '');
+    final crController = TextEditingController(text: existingCustomer?.crNumber ?? '');
+    final creditLimitController = TextEditingController(
+      text: existingCustomer?.creditLimit.toStringAsFixed(0) ?? '10000',
+    );
+    final gracePeriodController = TextEditingController(
+      text: existingCustomer?.creditPeriodDays.toString() ?? '30',
+    );
+    final routeAreaController = TextEditingController(
+      text: existingCustomer?.routeArea ?? 'مسار شمال الرياض - Riyadh North',
+    );
+    final streetController = TextEditingController(text: existingCustomer?.street ?? '');
+    final districtController = TextEditingController(text: existingCustomer?.district ?? '');
+    final cityController = TextEditingController(text: existingCustomer?.city ?? 'الرياض - Riyadh');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isEdit
+                              ? (lang.isArabic ? 'تعديل بيانات العميل والائتمان' : 'Edit Customer & Credit Limit')
+                              : (lang.isArabic ? 'تسجيل عميل جديد في النظام' : 'Register New Customer'),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        if (isEdit)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: AppColors.expenseRed),
+                            tooltip: lang.isArabic ? 'حذف العميل' : 'Delete Customer',
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _confirmDeleteCustomer(context, existingCustomer, db, lang);
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    TextField(
+                      controller: nameArController,
+                      decoration: InputDecoration(
+                        labelText: lang.isArabic ? 'اسم العميل / المؤسسة بالعربي *' : 'Customer Name (Arabic) *',
+                        prefixIcon: const Icon(Icons.store),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    TextField(
+                      controller: nameEnController,
+                      decoration: InputDecoration(
+                        labelText: lang.isArabic ? 'اسم العميل بالإنجليزي' : 'Customer Name (English)',
+                        prefixIcon: const Icon(Icons.business_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: lang.isArabic ? 'رقم الجوال *' : 'Phone Number *',
+                              prefixIcon: const Icon(Icons.phone),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: vatController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: lang.isArabic ? 'الرقم الضريبي (15 رقم)' : 'VAT # (15 digits)',
+                              prefixIcon: const Icon(Icons.verified),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: creditLimitController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: lang.isArabic ? 'سقف الائتمان (ر.س)' : 'Credit Limit (SAR)',
+                              prefixIcon: const Icon(Icons.credit_score),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: gracePeriodController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: lang.isArabic ? 'مهلة السداد (يوم)' : 'Grace Period (Days)',
+                              prefixIcon: const Icon(Icons.timer_outlined),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    TextField(
+                      controller: routeAreaController,
+                      decoration: InputDecoration(
+                        labelText: lang.isArabic ? 'مسار سيارة التوزيع / المنطقة' : 'Route / Delivery Area',
+                        prefixIcon: const Icon(Icons.alt_route),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: districtController,
+                            decoration: InputDecoration(
+                              labelText: lang.isArabic ? 'الحي' : 'District',
+                              prefixIcon: const Icon(Icons.location_on_outlined),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: cityController,
+                            decoration: InputDecoration(
+                              labelText: lang.isArabic ? 'المدينة' : 'City',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          final nameAr = nameArController.text.trim();
+                          final phone = phoneController.text.trim();
+                          if (nameAr.isEmpty || phone.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(lang.isArabic ? 'يرجى إدخال اسم العميل ورقم الجوال' : 'Please fill required fields'),
+                                backgroundColor: AppColors.expenseRed,
+                              ),
+                            );
+                            return;
+                          }
+
+                          final creditLimit = double.tryParse(creditLimitController.text.trim()) ?? 10000.0;
+                          final graceDays = int.tryParse(gracePeriodController.text.trim()) ?? 30;
+
+                          if (isEdit) {
+                            final updated = CustomerModel(
+                              id: existingCustomer.id,
+                              nameAr: nameAr,
+                              nameEn: nameEnController.text.trim().isEmpty ? nameAr : nameEnController.text.trim(),
+                              phone: phone,
+                              email: existingCustomer.email,
+                              vatNumber: vatController.text.trim().isEmpty ? null : vatController.text.trim(),
+                              crNumber: crController.text.trim().isEmpty ? null : crController.text.trim(),
+                              street: streetController.text.trim().isEmpty ? existingCustomer.street : streetController.text.trim(),
+                              district: districtController.text.trim().isEmpty ? existingCustomer.district : districtController.text.trim(),
+                              city: cityController.text.trim().isEmpty ? existingCustomer.city : cityController.text.trim(),
+                              postalCode: existingCustomer.postalCode,
+                              routeArea: routeAreaController.text.trim(),
+                              creditLimit: creditLimit,
+                              creditPeriodDays: graceDays,
+                              openingBalance: existingCustomer.openingBalance,
+                              currentBalance: existingCustomer.currentBalance,
+                            );
+                            db.updateCustomer(updated);
+                          } else {
+                            final newCust = CustomerModel(
+                              id: 'CUST-${DateTime.now().millisecondsSinceEpoch}',
+                              nameAr: nameAr,
+                              nameEn: nameEnController.text.trim().isEmpty ? nameAr : nameEnController.text.trim(),
+                              phone: phone,
+                              vatNumber: vatController.text.trim().isEmpty ? null : vatController.text.trim(),
+                              crNumber: crController.text.trim().isEmpty ? null : crController.text.trim(),
+                              street: streetController.text.trim().isEmpty ? 'طريق الملك فهد' : streetController.text.trim(),
+                              district: districtController.text.trim().isEmpty ? 'العليا' : districtController.text.trim(),
+                              city: cityController.text.trim().isEmpty ? 'الرياض' : cityController.text.trim(),
+                              routeArea: routeAreaController.text.trim(),
+                              creditLimit: creditLimit,
+                              creditPeriodDays: graceDays,
+                              openingBalance: 0.0,
+                              currentBalance: 0.0,
+                            );
+                            db.addCustomer(newCust);
+                          }
+
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isEdit
+                                    ? (lang.isArabic ? 'تم تحديث بيانات العميل بنجاح!' : 'Customer updated successfully!')
+                                    : (lang.isArabic ? 'تم تسجيل العميل وحفظه محلياً بنجاح!' : 'Customer added & persisted successfully!'),
+                              ),
+                              backgroundColor: AppColors.saleGreen,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.check),
+                        label: Text(
+                          isEdit
+                              ? (lang.isArabic ? 'حفظ التعديلات' : 'Save Changes')
+                              : (lang.isArabic ? 'تأكيد وإضافة العميل' : 'Add Customer'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteCustomer(BuildContext context, CustomerModel customer, DatabaseService db, AppLanguage lang) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(lang.isArabic ? 'حذف العميل' : 'Delete Customer'),
+        content: Text(
+          lang.isArabic
+              ? 'هل تريد بالتأكيد حذف العميل "${customer.nameAr}"؟'
+              : 'Are you sure you want to delete "${customer.nameEn}"?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(lang.isArabic ? 'إلغاء' : 'Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed),
+            onPressed: () {
+              db.deleteCustomer(customer.id);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(lang.isArabic ? 'تم حذف العميل بنجاح' : 'Customer deleted'),
+                  backgroundColor: AppColors.expenseRed,
+                ),
+              );
+            },
+            child: Text(lang.isArabic ? 'حذف' : 'Delete'),
+          ),
+        ],
+      ),
     );
   }
 }

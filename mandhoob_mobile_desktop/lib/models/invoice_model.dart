@@ -170,4 +170,72 @@ class InvoiceModel {
         return 'Delivery Challan';
     }
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'invoiceNumber': invoiceNumber,
+    'type': type.name,
+    'invoiceDate': invoiceDate.toIso8601String(),
+    'customerId': customerId,
+    'customerNameAr': customerNameAr,
+    'customerNameEn': customerNameEn,
+    'customerVatNumber': customerVatNumber,
+    'customerPhone': customerPhone,
+    'warehouseId': warehouseId,
+    'warehouseName': warehouseName,
+    'salesmanId': salesmanId,
+    'salesmanName': salesmanName,
+    'items': items.map((i) => i.toJson()).toList(),
+    'discountTotal': discountTotal,
+    'paymentMethod': paymentMethod.name,
+    'paymentStatus': paymentStatus.name,
+    'paidAmount': paidAmount,
+    'notes': notes,
+    'isSynced': isSynced,
+    'invoiceUuid': invoiceUuid,
+    'invoiceCounterValue': invoiceCounterValue,
+    'previousInvoiceHash': previousInvoiceHash,
+    'invoiceXmlHash': invoiceXmlHash,
+    'cryptographicStamp': cryptographicStamp,
+    'publicKeyCertificate': publicKeyCertificate,
+    'ubl21Xml': ubl21Xml,
+    'zatcaQrBase64': zatcaQrBase64,
+    'zatcaStatus': zatcaStatus.name,
+  };
+
+  factory InvoiceModel.fromJson(Map<String, dynamic> json) => InvoiceModel(
+    id: json['id'] as String,
+    invoiceNumber: json['invoiceNumber'] as String,
+    type: InvoiceType.values.firstWhere((t) => t.name == json['type'], orElse: () => InvoiceType.simplifiedTaxInvoice),
+    invoiceDate: DateTime.parse(json['invoiceDate'] as String),
+    customerId: json['customerId'] as String,
+    customerNameAr: json['customerNameAr'] as String,
+    customerNameEn: json['customerNameEn'] as String,
+    customerVatNumber: json['customerVatNumber'] as String?,
+    customerPhone: json['customerPhone'] as String?,
+    warehouseId: json['warehouseId'] as String,
+    warehouseName: json['warehouseName'] as String,
+    salesmanId: json['salesmanId'] as String,
+    salesmanName: json['salesmanName'] as String,
+    items: (json['items'] as List<dynamic>)
+        .map((i) => InvoiceItemModel.fromJson(i as Map<String, dynamic>))
+        .toList(),
+    discountTotal: (json['discountTotal'] as num?)?.toDouble() ?? 0.0,
+    paymentMethod: PaymentMethod.values.firstWhere((p) => p.name == json['paymentMethod'], orElse: () => PaymentMethod.cash),
+    paymentStatus: PaymentStatus.values.firstWhere((p) => p.name == json['paymentStatus'], orElse: () => PaymentStatus.paid),
+    paidAmount: (json['paidAmount'] as num?)?.toDouble() ?? 0.0,
+    notes: json['notes'] as String?,
+    isSynced: json['isSynced'] as bool? ?? false,
+    invoiceUuid: json['invoiceUuid'] as String?,
+    invoiceCounterValue: json['invoiceCounterValue'] as int?,
+    previousInvoiceHash: json['previousInvoiceHash'] as String?,
+    invoiceXmlHash: json['invoiceXmlHash'] as String?,
+    cryptographicStamp: json['cryptographicStamp'] as String?,
+    publicKeyCertificate: json['publicKeyCertificate'] as String?,
+    ubl21Xml: json['ubl21Xml'] as String?,
+    zatcaQrBase64: json['zatcaQrBase64'] as String?,
+    zatcaStatus: json['zatcaStatus'] != null
+        ? ZatcaPhase2Status.values.firstWhere((z) => z.name == json['zatcaStatus'], orElse: () => ZatcaPhase2Status.reported)
+        : null,
+  );
 }

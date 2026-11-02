@@ -431,6 +431,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const Divider(height: 1),
                     ListTile(
+                      leading: const Icon(Icons.storage, color: Colors.teal),
+                      title: Text(lang.isArabic ? 'حالة التخزين المحلي (Local Storage Persistence)' : 'Local Storage Persistence'),
+                      subtitle: Text(
+                        lang.isArabic
+                            ? 'البيانات والمخزون والفواتير مخزنة محلياً في الذاكرة الدائمة للجهاز وتعمل 100% بدون إنترنت'
+                            : 'All stock, items & invoices are persisted to device storage. Operates 100% offline.',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                            const SizedBox(width: 4),
+                            Text(
+                              lang.isArabic ? 'نشط ومحفوظ' : 'Persisted',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade900),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.restore, color: Colors.orange),
+                      title: Text(lang.isArabic ? 'استعادة البيانات التجريبية الافتراضية' : 'Reset to Default Demo Data'),
+                      subtitle: Text(
+                        lang.isArabic
+                            ? 'مسح التخزين المحلي واستعادة بيانات الأصناف والمبيعات التجريبية الأولية'
+                            : 'Clear local database cache and restore initial seed data',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      trailing: OutlinedButton(
+                        onPressed: () => _confirmResetDemoData(context, lang, db),
+                        child: Text(lang.isArabic ? 'استعادة' : 'Reset'),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
                       leading: const Icon(Icons.sync, color: AppColors.primary),
                       title: Text(lang.isArabic ? 'مزامنة فورية مع الخادم السحابي' : 'Instant Cloud Sync Delta'),
                       subtitle: Text('${lang.isArabic ? "آخر مزامنة" : "Last Sync"}: ${sync.lastSyncTime.toString().substring(0, 16)}'),
@@ -501,6 +546,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
             child: const Text('تأكيد وإصدار شهادة CSID'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmResetDemoData(BuildContext context, AppLanguage lang, DatabaseService db) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                lang.isArabic ? 'استعادة البيانات التجريبية' : 'Reset to Demo Data',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          lang.isArabic
+              ? 'هل تريد بالتأكيد مسح التخزين المحلي واستعادة الأصناف والمستودعات والعملاء الافتراضيين؟'
+              : 'Are you sure you want to clear local storage and restore default demo products, warehouses, and customers?',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(lang.isArabic ? 'إلغاء' : 'Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () async {
+              await db.resetToInitialDemoData();
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      lang.isArabic
+                          ? 'تمت استعادة البيانات التجريبية الافتراضية بنجاح'
+                          : 'Default demo data restored successfully',
+                    ),
+                    backgroundColor: Colors.orange.shade800,
+                  ),
+                );
+              }
+            },
+            child: Text(
+              lang.isArabic ? 'استعادة وتعيين' : 'Reset & Restore',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

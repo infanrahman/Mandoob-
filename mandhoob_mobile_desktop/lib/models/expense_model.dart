@@ -57,4 +57,46 @@ class ExpenseModel {
         return 'مصاريف أخرى متنوعة';
     }
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'expenseNumber': expenseNumber,
+      'category': category.name,
+      'amount': amount,
+      'vatAmount': vatAmount,
+      'date': date.toIso8601String(),
+      'paymentMode': paymentMode,
+      'vanId': vanId,
+      'spentByUserId': spentByUserId,
+      'spentByUserName': spentByUserName,
+      'description': description,
+      'hasReceiptAttachment': hasReceiptAttachment,
+    };
+  }
+
+  factory ExpenseModel.fromJson(Map<String, dynamic> json) {
+    ExpenseCategory parsedCat = ExpenseCategory.miscellaneous;
+    try {
+      parsedCat = ExpenseCategory.values.firstWhere(
+        (c) => c.name == json['category'],
+        orElse: () => ExpenseCategory.miscellaneous,
+      );
+    } catch (_) {}
+
+    return ExpenseModel(
+      id: json['id'] as String? ?? 'EXP-${DateTime.now().millisecondsSinceEpoch}',
+      expenseNumber: json['expenseNumber'] as String? ?? 'EXP-101',
+      category: parsedCat,
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      vatAmount: (json['vatAmount'] as num?)?.toDouble() ?? 0.0,
+      date: json['date'] != null ? DateTime.tryParse(json['date'] as String) ?? DateTime.now() : DateTime.now(),
+      paymentMode: json['paymentMode'] as String? ?? 'نقداً - Cash',
+      vanId: json['vanId'] as String?,
+      spentByUserId: json['spentByUserId'] as String? ?? 'USR-001',
+      spentByUserName: json['spentByUserName'] as String? ?? 'Admin',
+      description: json['description'] as String? ?? '',
+      hasReceiptAttachment: json['hasReceiptAttachment'] as bool? ?? false,
+    );
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'local_storage_service.dart';
 import '../models/company_model.dart';
 import '../models/customer_model.dart';
 import '../models/supplier_model.dart';
@@ -11,12 +12,137 @@ import '../models/invoice_item_model.dart';
 import '../models/expense_model.dart';
 import '../models/payment_voucher_model.dart';
 import '../models/van_salesman_progress_model.dart';
+import '../models/user_model.dart';
 
 class DatabaseService extends ChangeNotifier {
   static final DatabaseService _instance = DatabaseService._internal();
   factory DatabaseService() => _instance;
   DatabaseService._internal() {
     _seedInitialData();
+    _loadFromLocalStorage();
+  }
+
+  final LocalStorageService _storage = LocalStorageService();
+  bool _isLocalStorageLoaded = false;
+  bool get isLocalStorageLoaded => _isLocalStorageLoaded;
+
+  Future<void> _loadFromLocalStorage() async {
+    try {
+      final storedProducts = await _storage.loadProducts();
+      if (storedProducts != null && storedProducts.isNotEmpty) {
+        _products.clear();
+        _products.addAll(storedProducts);
+      }
+
+      final storedCustomers = await _storage.loadCustomers();
+      if (storedCustomers != null && storedCustomers.isNotEmpty) {
+        _customers.clear();
+        _customers.addAll(storedCustomers);
+      }
+
+      final storedTransfers = await _storage.loadStockTransfers();
+      if (storedTransfers != null && storedTransfers.isNotEmpty) {
+        _stockTransfers.clear();
+        _stockTransfers.addAll(storedTransfers);
+      }
+
+      final storedAdjustments = await _storage.loadStockAdjustments();
+      if (storedAdjustments != null && storedAdjustments.isNotEmpty) {
+        _stockAdjustments.clear();
+        _stockAdjustments.addAll(storedAdjustments);
+      }
+
+      final storedInvoices = await _storage.loadInvoices();
+      if (storedInvoices != null && storedInvoices.isNotEmpty) {
+        _invoices.clear();
+        _invoices.addAll(storedInvoices);
+      }
+
+      final storedSuppliers = await _storage.loadSuppliers();
+      if (storedSuppliers != null && storedSuppliers.isNotEmpty) {
+        _suppliers.clear();
+        _suppliers.addAll(storedSuppliers);
+      }
+
+      final storedExpenses = await _storage.loadExpenses();
+      if (storedExpenses != null && storedExpenses.isNotEmpty) {
+        _expenses.clear();
+        _expenses.addAll(storedExpenses);
+      }
+
+      final storedUsers = await _storage.loadCompanyUsers();
+      if (storedUsers != null && storedUsers.isNotEmpty) {
+        _companyUsers.clear();
+        _companyUsers.addAll(storedUsers);
+      }
+
+      final storedCompany = await _storage.loadCompanyProfile();
+      if (storedCompany != null && storedCompany.isNotEmpty) {
+        companyNameAr = storedCompany['nameAr'] ?? companyNameAr;
+        companyNameEn = storedCompany['nameEn'] ?? companyNameEn;
+        vatNumber = storedCompany['vatNumber'] ?? vatNumber;
+        crNumber = storedCompany['crNumber'] ?? crNumber;
+        buildingNumber = storedCompany['buildingNumber'] ?? buildingNumber;
+        street = storedCompany['street'] ?? street;
+        district = storedCompany['district'] ?? district;
+        city = storedCompany['city'] ?? city;
+        postalCode = storedCompany['postalCode'] ?? postalCode;
+      }
+
+      if (storedProducts == null) {
+        await _saveAllToStorage();
+      }
+
+      _isLocalStorageLoaded = true;
+      notifyListeners();
+    } catch (_) {
+      _isLocalStorageLoaded = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _saveAllToStorage() async {
+    await _storage.saveProducts(_products);
+    await _storage.saveCustomers(_customers);
+    await _storage.saveStockTransfers(_stockTransfers);
+    await _storage.saveStockAdjustments(_stockAdjustments);
+    await _storage.saveInvoices(_invoices);
+    await _storage.saveSuppliers(_suppliers);
+    await _storage.saveExpenses(_expenses);
+    await _storage.saveCompanyUsers(_companyUsers);
+    await _saveCompanyProfileToStorage();
+  }
+
+  Future<void> _saveCompanyProfileToStorage() async {
+    await _storage.saveCompanyProfile({
+      'nameAr': companyNameAr,
+      'nameEn': companyNameEn,
+      'vatNumber': vatNumber,
+      'crNumber': crNumber,
+      'buildingNumber': buildingNumber,
+      'street': street,
+      'district': district,
+      'city': city,
+      'postalCode': postalCode,
+    });
+  }
+
+  Future<void> resetToInitialDemoData() async {
+    await _storage.clearAll();
+    _products.clear();
+    _customers.clear();
+    _suppliers.clear();
+    _warehouses.clear();
+    _stockTransfers.clear();
+    _stockAdjustments.clear();
+    _invoices.clear();
+    _expenses.clear();
+    _companyUsers.clear();
+    _paymentVouchers.clear();
+    _salesmenProgress.clear();
+    _seedInitialData();
+    await _saveAllToStorage();
+    notifyListeners();
   }
 
   // Company Settings
@@ -51,6 +177,7 @@ class DatabaseService extends ChangeNotifier {
     this.district = district;
     this.city = city;
     this.postalCode = postalCode;
+    _saveCompanyProfileToStorage();
     notifyListeners();
   }
 
@@ -66,6 +193,7 @@ class DatabaseService extends ChangeNotifier {
   final List<PaymentVoucherModel> _paymentVouchers = [];
   final List<VanSalesmanProgressModel> _salesmenProgress = [];
   final List<StockAdjustmentModel> _stockAdjustments = [];
+  final List<UserModel> _companyUsers = [];
 
   List<CompanyModel> get companies => List.unmodifiable(_companies);
   List<CustomerModel> get customers => List.unmodifiable(_customers);
@@ -76,6 +204,7 @@ class DatabaseService extends ChangeNotifier {
   List<StockAdjustmentModel> get stockAdjustments => List.unmodifiable(_stockAdjustments);
   List<InvoiceModel> get invoices => List.unmodifiable(_invoices);
   List<ExpenseModel> get expenses => List.unmodifiable(_expenses);
+  List<UserModel> get companyUsers => List.unmodifiable(_companyUsers);
   List<PaymentVoucherModel> get paymentVouchers => List.unmodifiable(_paymentVouchers);
   List<VanSalesmanProgressModel> get salesmenProgress => _salesmenProgress;
 
@@ -284,6 +413,24 @@ class DatabaseService extends ChangeNotifier {
   /// Add a customer directly to the system
   void addCustomer(CustomerModel customer) {
     _customers.insert(0, customer);
+    _storage.saveCustomers(_customers);
+    notifyListeners();
+  }
+
+  /// Update an existing customer's details and credit terms
+  void updateCustomer(CustomerModel customer) {
+    final index = _customers.indexWhere((c) => c.id == customer.id);
+    if (index != -1) {
+      _customers[index] = customer;
+      _storage.saveCustomers(_customers);
+      notifyListeners();
+    }
+  }
+
+  /// Delete a customer from the system
+  void deleteCustomer(String customerId) {
+    _customers.removeWhere((c) => c.id == customerId);
+    _storage.saveCustomers(_customers);
     notifyListeners();
   }
 
@@ -293,6 +440,7 @@ class DatabaseService extends ChangeNotifier {
     required CustomerModel customer,
   }) {
     _customers.insert(0, customer);
+    _storage.saveCustomers(_customers);
     final vIndex = _salesmenProgress.indexWhere((p) => p.vanId == vanId);
     if (vIndex != -1) {
       final prog = _salesmenProgress[vIndex];
@@ -308,6 +456,129 @@ class DatabaseService extends ChangeNotifier {
       );
       prog.routeStops.add(newStop);
     }
+    notifyListeners();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Suppliers Management
+  // ---------------------------------------------------------------------------
+  void addSupplier(SupplierModel supplier) {
+    _suppliers.insert(0, supplier);
+    _storage.saveSuppliers(_suppliers);
+    notifyListeners();
+  }
+
+  void updateSupplier(SupplierModel supplier) {
+    final index = _suppliers.indexWhere((s) => s.id == supplier.id);
+    if (index != -1) {
+      _suppliers[index] = supplier;
+      _storage.saveSuppliers(_suppliers);
+      notifyListeners();
+    }
+  }
+
+  void deleteSupplier(String supplierId) {
+    _suppliers.removeWhere((s) => s.id == supplierId);
+    _storage.saveSuppliers(_suppliers);
+    notifyListeners();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Inward Purchase Bill Recording (تسجيل فاتورة شراء وتحديث المخزون ومستحقات المورد)
+  // ---------------------------------------------------------------------------
+  void recordPurchaseBill({
+    required String supplierId,
+    required String warehouseId,
+    required List<StockTransferItem> items,
+    required double subtotal,
+    required double vatAmount,
+    required String paymentMode,
+    required String createdByUserId,
+    required String createdByUserName,
+    String? billNumber,
+    String? notes,
+  }) {
+    final grandTotal = subtotal + vatAmount;
+    final bNum = billNumber?.isNotEmpty == true
+        ? billNumber!
+        : 'PUR-${DateTime.now().year}-${_expenses.length + 101}';
+
+    // 1. Increase stock in the target warehouse
+    for (final item in items) {
+      final pIndex = _products.indexWhere((p) => p.id == item.productId);
+      if (pIndex != -1) {
+        final prod = _products[pIndex];
+        final currentStock = prod.stockByWarehouse[warehouseId] ?? 0.0;
+        prod.stockByWarehouse[warehouseId] = currentStock + item.quantity;
+      }
+    }
+    _storage.saveProducts(_products);
+
+    // 2. If credit purchase, increase supplier payable balance
+    final isCredit = paymentMode == 'Credit' || paymentMode == 'آجل' || paymentMode.contains('Credit');
+    if (isCredit) {
+      final sIndex = _suppliers.indexWhere((s) => s.id == supplierId);
+      if (sIndex != -1) {
+        final supp = _suppliers[sIndex];
+        _suppliers[sIndex] = SupplierModel(
+          id: supp.id,
+          nameAr: supp.nameAr,
+          nameEn: supp.nameEn,
+          phone: supp.phone,
+          email: supp.email,
+          vatNumber: supp.vatNumber,
+          crNumber: supp.crNumber,
+          city: supp.city,
+          creditLimit: supp.creditLimit,
+          creditPeriodDays: supp.creditPeriodDays,
+          openingBalance: supp.openingBalance,
+          currentBalance: supp.currentBalance + grandTotal,
+        );
+        _storage.saveSuppliers(_suppliers);
+      }
+    }
+
+    // 3. Record expense / purchase ledger entry
+    final supp = _suppliers.firstWhere((s) => s.id == supplierId, orElse: () => _suppliers.first);
+    final expense = ExpenseModel(
+      id: 'PUR-${DateTime.now().millisecondsSinceEpoch}',
+      expenseNumber: bNum,
+      category: ExpenseCategory.miscellaneous,
+      amount: subtotal,
+      vatAmount: vatAmount,
+      date: DateTime.now(),
+      paymentMode: paymentMode,
+      spentByUserId: createdByUserId,
+      spentByUserName: createdByUserName,
+      description: 'فاتورة شراء بضاعة من ${supp.nameAr} - مستودع $warehouseId ${notes?.isNotEmpty == true ? "($notes)" : ""}',
+    );
+    _expenses.insert(0, expense);
+    _storage.saveExpenses(_expenses);
+
+    notifyListeners();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Company Users Management
+  // ---------------------------------------------------------------------------
+  void addCompanyUser(UserModel user) {
+    _companyUsers.add(user);
+    _storage.saveCompanyUsers(_companyUsers);
+    notifyListeners();
+  }
+
+  void updateCompanyUser(UserModel user) {
+    final index = _companyUsers.indexWhere((u) => u.id == user.id);
+    if (index != -1) {
+      _companyUsers[index] = user;
+      _storage.saveCompanyUsers(_companyUsers);
+      notifyListeners();
+    }
+  }
+
+  void deleteCompanyUser(String userId) {
+    _companyUsers.removeWhere((u) => u.id == userId);
+    _storage.saveCompanyUsers(_companyUsers);
     notifyListeners();
   }
 
@@ -490,12 +761,22 @@ class DatabaseService extends ChangeNotifier {
       }
     }
 
+    _storage.saveInvoices(_invoices);
+    _storage.saveProducts(_products);
+    _storage.saveCustomers(_customers);
     notifyListeners();
   }
 
   // Adding an expense
   void addExpense(ExpenseModel expense) {
     _expenses.insert(0, expense);
+    _storage.saveExpenses(_expenses);
+    notifyListeners();
+  }
+
+  void deleteExpense(String expenseId) {
+    _expenses.removeWhere((e) => e.id == expenseId);
+    _storage.saveExpenses(_expenses);
     notifyListeners();
   }
 
@@ -535,12 +816,15 @@ class DatabaseService extends ChangeNotifier {
     );
 
     _stockTransfers.insert(0, transfer);
+    _storage.saveProducts(_products);
+    _storage.saveStockTransfers(_stockTransfers);
     notifyListeners();
   }
 
   // Add a new product
   void addProduct(ProductModel product) {
     _products.add(product);
+    _storage.saveProducts(_products);
     notifyListeners();
   }
 
@@ -549,6 +833,7 @@ class DatabaseService extends ChangeNotifier {
     final index = _products.indexWhere((p) => p.id == product.id);
     if (index != -1) {
       _products[index] = product;
+      _storage.saveProducts(_products);
       notifyListeners();
     }
   }
@@ -556,6 +841,7 @@ class DatabaseService extends ChangeNotifier {
   // Delete product
   void deleteProduct(String productId) {
     _products.removeWhere((p) => p.id == productId);
+    _storage.saveProducts(_products);
     notifyListeners();
   }
 
@@ -598,6 +884,8 @@ class DatabaseService extends ChangeNotifier {
       );
 
       _stockAdjustments.insert(0, adj);
+      _storage.saveProducts(_products);
+      _storage.saveStockAdjustments(_stockAdjustments);
       notifyListeners();
     }
   }
@@ -642,6 +930,8 @@ class DatabaseService extends ChangeNotifier {
     );
 
     _stockTransfers.insert(0, transfer);
+    _storage.saveProducts(_products);
+    _storage.saveStockTransfers(_stockTransfers);
     notifyListeners();
   }
 
@@ -1230,6 +1520,59 @@ class DatabaseService extends ChangeNotifier {
           totalVanExpenses: 100.0,
           expectedCashHandover: 500.0 + 1900.0 + 1200.0 - 100.0,
         ),
+      ),
+    ]);
+
+    // 9. Initial Company Users
+    _companyUsers.addAll([
+      UserModel(
+        id: 'USR-001',
+        companyId: 'COMP-001',
+        companyNameAr: companyNameAr,
+        name: 'سلطان القحطاني - Sultan Al-Qahtani',
+        email: 'sultan@mandhoob.sa',
+        phone: '0501234567',
+        role: UserRole.superAdmin,
+      ),
+      UserModel(
+        id: 'USR-002',
+        companyId: 'COMP-001',
+        companyNameAr: companyNameAr,
+        name: 'فهد العتيبي - Fahad Al-Otaibi',
+        email: 'fahad.mgr@mandhoob.sa',
+        phone: '0541112233',
+        role: UserRole.admin,
+      ),
+      UserModel(
+        id: 'USR-003',
+        companyId: 'COMP-001',
+        companyNameAr: companyNameAr,
+        name: 'محمد الدوسري - Mohammed Al-Dosari',
+        email: 'mohammed.sales@mandhoob.sa',
+        phone: '0559876543',
+        role: UserRole.salesman,
+        assignedVanId: 'VAN-01',
+        assignedVanName: 'سيارة 1 - الرياض شمال',
+      ),
+      UserModel(
+        id: 'USR-004',
+        companyId: 'COMP-001',
+        companyNameAr: companyNameAr,
+        name: 'عبدالله الشهري - Abdullah Al-Shehri',
+        email: 'abdullah.acc@mandhoob.sa',
+        phone: '0567778899',
+        role: UserRole.accountant,
+      ),
+      UserModel(
+        id: 'USR-005',
+        companyId: 'COMP-001',
+        companyNameAr: companyNameAr,
+        name: 'أحمد الغامدي - Ahmed Al-Ghamdi',
+        email: 'ahmed.sales@mandhoob.sa',
+        phone: '0551122445',
+        role: UserRole.salesman,
+        assignedVanId: 'VAN-02',
+        assignedVanName: 'سيارة 2 - الرياض شرق',
       ),
     ]);
   }

@@ -6,6 +6,7 @@ import '../../models/invoice_model.dart';
 import '../../models/payment_voucher_model.dart';
 import '../../services/database_service.dart';
 import '../sales/invoice_detail_screen.dart';
+import '../sales/create_invoice_screen.dart';
 import 'payment_in_dialog.dart';
 
 class CustomerDetailScreen extends StatelessWidget {
@@ -77,19 +78,46 @@ class CustomerDetailScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => PaymentInDialog(customer: currentCust),
-                                );
-                              },
-                              icon: const Icon(Icons.payments, size: 16),
-                              label: Text(lang.isArabic ? 'سند قبض نقد' : 'Cash Receipt In'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.saleGreen,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              ),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => CreateInvoiceScreen(
+                                          defaultType: currentCust.isVatRegistered
+                                              ? InvoiceType.taxInvoice
+                                              : InvoiceType.simplifiedTaxInvoice,
+                                          preselectedCustomer: currentCust,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.receipt_long, size: 16),
+                                  label: Text(lang.isArabic ? '+ فاتورة جديدة' : '+ New Invoice'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                ),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (_) => PaymentInDialog(customer: currentCust),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.payments, size: 16),
+                                  label: Text(lang.isArabic ? 'سند قبض نقد' : 'Cash Receipt In'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.saleGreen,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

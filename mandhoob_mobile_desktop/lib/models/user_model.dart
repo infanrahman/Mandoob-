@@ -152,4 +152,42 @@ class UserModel {
         return 'Accountant';
     }
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'companyId': companyId,
+      'companyNameAr': companyNameAr,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'role': role.name,
+      'assignedVanId': assignedVanId,
+      'assignedVanName': assignedVanName,
+      'isActive': isActive,
+    };
+  }
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    UserRole parsedRole = UserRole.salesman;
+    try {
+      parsedRole = UserRole.values.firstWhere(
+        (r) => r.name == json['role'],
+        orElse: () => UserRole.salesman,
+      );
+    } catch (_) {}
+
+    return UserModel(
+      id: json['id'] as String? ?? 'USR-${DateTime.now().millisecondsSinceEpoch}',
+      companyId: json['companyId'] as String? ?? 'COMP-001',
+      companyNameAr: json['companyNameAr'] as String? ?? 'شركة المندوب للتوزيع والتجارة المحدودة',
+      name: json['name'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      role: parsedRole,
+      assignedVanId: json['assignedVanId'] as String?,
+      assignedVanName: json['assignedVanName'] as String?,
+      isActive: json['isActive'] as bool? ?? true,
+    );
+  }
 }

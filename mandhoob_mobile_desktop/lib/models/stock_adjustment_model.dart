@@ -58,4 +58,47 @@ class StockAdjustmentModel {
         return isArabic ? 'تسوية يدوية أخرى' : 'Other Adjustment';
     }
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'adjustmentNumber': adjustmentNumber,
+      'date': date.toIso8601String(),
+      'productId': productId,
+      'productNameAr': productNameAr,
+      'productNameEn': productNameEn,
+      'warehouseId': warehouseId,
+      'warehouseName': warehouseName,
+      'previousQuantity': previousQuantity,
+      'newQuantity': newQuantity,
+      'differenceQuantity': differenceQuantity,
+      'reason': reason.name,
+      'notes': notes,
+      'adjustedByUserId': adjustedByUserId,
+      'adjustedByUserName': adjustedByUserName,
+    };
+  }
+
+  factory StockAdjustmentModel.fromJson(Map<String, dynamic> json) {
+    return StockAdjustmentModel(
+      id: json['id'] as String,
+      adjustmentNumber: json['adjustmentNumber'] as String,
+      date: DateTime.parse(json['date'] as String),
+      productId: json['productId'] as String,
+      productNameAr: json['productNameAr'] as String,
+      productNameEn: json['productNameEn'] as String,
+      warehouseId: json['warehouseId'] as String,
+      warehouseName: json['warehouseName'] as String,
+      previousQuantity: (json['previousQuantity'] as num).toDouble(),
+      newQuantity: (json['newQuantity'] as num).toDouble(),
+      differenceQuantity: (json['differenceQuantity'] as num).toDouble(),
+      reason: AdjustmentReason.values.firstWhere(
+        (r) => r.name == json['reason'],
+        orElse: () => AdjustmentReason.physicalCount,
+      ),
+      notes: json['notes'] as String?,
+      adjustedByUserId: json['adjustedByUserId'] as String,
+      adjustedByUserName: json['adjustedByUserName'] as String,
+    );
+  }
 }
