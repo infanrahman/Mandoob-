@@ -51,12 +51,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             centerTitle: false,
           ),
           body: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
             children: [
               // 1. Enterprise User & Organization Hero Header
               _buildUserHeroHeader(auth, db, lang),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // 2. Language & Localization Section
               _buildSectionHeader(
@@ -85,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // 3. Organization & Tax Profile Section
               _buildSectionHeader(
@@ -101,7 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // 4. ZATCA Phase 2 E-Invoicing Section (Visible ONLY to Admin & SuperAdmin)
               if (auth.hasRole([UserRole.admin, UserRole.superAdmin])) ...[
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
                 _buildSectionHeader(
                   title: lang.isArabic ? 'الفوترة الإلكترونية (ZATCA)' : 'ZATCA Phase 2 E-Invoicing',
                   subtitle: lang.isArabic
@@ -114,7 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildZatcaPhase2Card(context, lang),
               ],
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // 5. Thermal POS Printer Section
               _buildSectionHeader(
@@ -128,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               _buildPrinterConfigCard(context, printer, lang),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // 6. Local Storage, Offline First & Cloud Sync
               _buildSectionHeader(
@@ -142,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               _buildSyncAndStorageCard(context, sync, lang),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // 7. Security, Users & Role Permissions
               _buildSectionHeader(
@@ -156,7 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               _buildSecurityAndRolesCard(context, auth, db, lang),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // 8. Maintenance & Demo Data Zone
               _buildSectionHeader(
@@ -170,7 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               _buildMaintenanceCard(context, db, auth, lang),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // 9. Modern System Information Footer
               _buildSystemInfoFooter(lang),
@@ -202,17 +202,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1E3A8A).withOpacity(0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Row(
@@ -222,8 +222,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Stack(
                   children: [
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 50,
+                      height: 50,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.15),
                         shape: BoxShape.circle,
@@ -235,7 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                          fontSize: 18,
                           letterSpacing: 1,
                         ),
                       ),
@@ -244,8 +244,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       bottom: 0,
                       right: 0,
                       child: Container(
-                        width: 15,
-                        height: 15,
+                        width: 14,
+                        height: 14,
                         decoration: BoxDecoration(
                           color: AppColors.saleGreen,
                           shape: BoxShape.circle,
@@ -255,36 +255,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 // User info & Role Badge
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 4,
                         children: [
-                          Flexible(
-                            child: Text(
-                              user.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 17,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            user.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
-                          const SizedBox(width: 8),
                           // Role Pill Badge
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
                               color: isSuper
                                   ? Colors.purple.withOpacity(0.3)
                                   : isAdmin
                                       ? Colors.blue.withOpacity(0.3)
                                       : Colors.teal.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: isSuper
                                     ? Colors.purple.shade300
@@ -321,8 +320,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         '${user.email} • ${lang.isArabic ? db.companyNameAr : db.companyNameEn}',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.75),
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -330,18 +330,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            // Quick Status Chips inside hero
+            const SizedBox(height: 14),
+            // Quick Status Chips inside hero (Responsive Wrap)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 6,
                 children: [
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.shield_outlined, size: 14, color: AppColors.saleGreen),
                       const SizedBox(width: 6),
@@ -355,12 +359,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  Container(
-                    width: 1,
-                    height: 14,
-                    color: Colors.white.withOpacity(0.2),
-                  ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.cloud_done_outlined, size: 14, color: Colors.cyanAccent),
                       const SizedBox(width: 6),
@@ -408,13 +408,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     lang.isArabic ? 'لغة الواجهة والاتجاه' : 'Interface Language & Layout',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     lang.isArabic
-                        ? 'يدعم التبديل الحي الفوري بين العربية (RTL) والإنجليزية (LTR)'
-                        : 'Supports live switching between Arabic (RTL) and English (LTR)',
+                        ? 'تبديل فوري بين العربية (RTL) والإنجليزية (LTR)'
+                        : 'Switch live between Arabic (RTL) and English (LTR)',
                     style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                 ],
@@ -422,33 +422,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: _buildLangChoiceCard(
-                flag: '🇸🇦',
-                title: 'العربية (RTL)',
-                subtitle: 'المملكة العربية السعودية',
-                isSelected: lang.isArabic,
-                onTap: () {
-                  if (!lang.isArabic) lang.setLocale(const Locale('ar'));
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildLangChoiceCard(
-                flag: '🌐',
-                title: 'English (LTR)',
-                subtitle: 'International Layout',
-                isSelected: !lang.isArabic,
-                onTap: () {
-                  if (lang.isArabic) lang.setLocale(const Locale('en'));
-                },
-              ),
-            ),
-          ],
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isVeryNarrow = constraints.maxWidth < 280;
+            if (isVeryNarrow) {
+              return Column(
+                children: [
+                  _buildLangChoiceCard(
+                    flag: '🇸🇦',
+                    title: 'العربية (RTL)',
+                    subtitle: 'المملكة العربية السعودية',
+                    isSelected: lang.isArabic,
+                    onTap: () {
+                      if (!lang.isArabic) lang.setLocale(const Locale('ar'));
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _buildLangChoiceCard(
+                    flag: '🌐',
+                    title: 'English (LTR)',
+                    subtitle: 'International Layout',
+                    isSelected: !lang.isArabic,
+                    onTap: () {
+                      if (lang.isArabic) lang.setLocale(const Locale('en'));
+                    },
+                  ),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(
+                  child: _buildLangChoiceCard(
+                    flag: '🇸🇦',
+                    title: 'العربية',
+                    subtitle: 'RTL',
+                    isSelected: lang.isArabic,
+                    onTap: () {
+                      if (!lang.isArabic) lang.setLocale(const Locale('ar'));
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildLangChoiceCard(
+                    flag: '🌐',
+                    title: 'English',
+                    subtitle: 'LTR',
+                    isSelected: !lang.isArabic,
+                    onTap: () {
+                      if (lang.isArabic) lang.setLocale(const Locale('en'));
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -466,7 +496,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary.withOpacity(0.06) : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
@@ -477,8 +507,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         child: Row(
           children: [
-            Text(flag, style: const TextStyle(fontSize: 22)),
-            const SizedBox(width: 10),
+            Text(flag, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,20 +517,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                      fontSize: 12,
                       color: isSelected ? AppColors.primary : AppColors.textPrimary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     subtitle,
                     style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 18),
+              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 16),
           ],
         ),
       ),
@@ -518,16 +551,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) {
     return _buildGroupContainer(
       children: [
+        // Company Title & Icon
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: AppColors.primary.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 24),
+              child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -536,87 +571,94 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     lang.isArabic ? db.companyNameAr : db.companyNameEn,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     lang.isArabic ? db.companyNameEn : db.companyNameAr,
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            Wrap(
-              spacing: 6,
-              children: [
-                if (auth.currentRole == UserRole.superAdmin)
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CreateCompanyScreen()),
-                      );
-                    },
-                    icon: const Icon(Icons.add_business_rounded, size: 14),
-                    label: Text(lang.isArabic ? '+ منشأة' : '+ Add'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.saleGreen,
-                      side: const BorderSide(color: AppColors.saleGreen),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CompanyProfileScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_rounded, size: 14),
-                  label: Text(lang.isArabic ? 'تعديل' : 'Edit'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Action Buttons Row (Responsive Wrap)
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (auth.currentRole == UserRole.superAdmin)
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreateCompanyScreen()),
+                  );
+                },
+                icon: const Icon(Icons.add_business_rounded, size: 14),
+                label: Text(lang.isArabic ? '+ منشأة جديدة' : '+ Add Entity'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.saleGreen,
+                  side: const BorderSide(color: AppColors.saleGreen),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                 ),
-              ],
+              ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CompanyProfileScreen()),
+                );
+              },
+              icon: const Icon(Icons.edit_rounded, size: 14),
+              label: Text(lang.isArabic ? 'تعديل البيانات' : 'Edit Profile'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
-        const Divider(height: 24, thickness: 1, color: AppColors.cardBorder),
+        const Divider(height: 20, thickness: 1, color: AppColors.cardBorder),
         // Tax details grid
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.cardBorder),
           ),
           child: Column(
             children: [
               _buildDataRow(
                 icon: Icons.confirmation_number_outlined,
-                label: lang.isArabic ? 'الرقم الضريبي (VAT)' : 'VAT Registration Number',
+                label: lang.isArabic ? 'الرقم الضريبي (VAT)' : 'VAT Registration',
                 value: db.vatNumber,
                 isHighlight: true,
               ),
-              const Divider(height: 16, thickness: 0.5, color: AppColors.cardBorder),
+              const Divider(height: 14, thickness: 0.5, color: AppColors.cardBorder),
               _buildDataRow(
                 icon: Icons.receipt_long_outlined,
-                label: lang.isArabic ? 'السجل التجاري (CR)' : 'Commercial Registration',
+                label: lang.isArabic ? 'السجل التجاري (CR)' : 'CR Number',
                 value: db.crNumber,
               ),
-              const Divider(height: 16, thickness: 0.5, color: AppColors.cardBorder),
+              const Divider(height: 14, thickness: 0.5, color: AppColors.cardBorder),
               _buildDataRow(
                 icon: Icons.location_on_outlined,
-                label: lang.isArabic ? 'العنوان الوطني المسجل' : 'National Address',
-                value: '${db.buildingNumber} ${db.street}، ${db.district}، ${db.city}، ${db.postalCode}',
+                label: lang.isArabic ? 'العنوان الوطني' : 'Address',
+                value: '${db.buildingNumber} ${db.street}، ${db.city}',
               ),
             ],
           ),
@@ -643,64 +685,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: AppColors.saleGreen.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.verified_rounded, color: AppColors.saleGreen, size: 22),
+                  child: const Icon(Icons.verified_rounded, color: AppColors.saleGreen, size: 20),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              lang.isArabic
-                                  ? 'منظومة الفاتورة الإلكترونية - المرحلة الثانية'
-                                  : 'ZATCA Phase 2 E-Invoicing Engine',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        lang.isArabic ? 'الفاتورة الإلكترونية - المرحلة 2' : 'ZATCA Phase 2 Engine',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        lang.isArabic ? 'التكامل التام مع بوابة فاتورة' : 'Full Fatoora Portal Integration',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        lang.isArabic ? 'التكامل مع منصة فاتورة' : 'Fatoora Portal Integrated',
+                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.saleGreen.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.saleGreen, width: 0.8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.check_circle_rounded, size: 12, color: AppColors.saleGreen),
+                      const Icon(Icons.check_circle_rounded, size: 11, color: AppColors.saleGreen),
                       const SizedBox(width: 4),
                       Text(
-                        lang.isArabic ? 'متصل (CSID)' : 'Connected (CSID)',
+                        lang.isArabic ? 'متصل' : 'Connected',
                         style: const TextStyle(
                           color: AppColors.saleGreen,
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -709,102 +744,132 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const Divider(height: 20, thickness: 1, color: AppColors.cardBorder),
+            const Divider(height: 18, thickness: 1, color: AppColors.cardBorder),
             // Compliance Features Badges
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 6,
+              runSpacing: 6,
               children: [
                 _buildZatcaFeatureBadge('SHA-256 Hash', Icons.tag, Colors.blue),
                 _buildZatcaFeatureBadge('ECDSA Stamp', Icons.fingerprint, Colors.indigo),
                 _buildZatcaFeatureBadge('X.509 CSID', Icons.security, Colors.green),
                 _buildZatcaFeatureBadge('UBL 2.1 XML', Icons.code, Colors.teal),
-                _buildZatcaFeatureBadge('TLV QR Phase 2', Icons.qr_code_2, Colors.purple),
+                _buildZatcaFeatureBadge('TLV QR', Icons.qr_code_2, Colors.purple),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.blue.shade50.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.blue.shade200, width: 0.8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 16, color: Color(0xFF1E3A8A)),
+                  const Icon(Icons.info_outline, size: 15, color: Color(0xFF1E3A8A)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       lang.isArabic
-                          ? 'بيئة الربط النشطة: منصة المحاكاة التابعة لهيئة الزكاة (Simulation Sandbox). الفواتير تصدر بتشفير 100% متوافق.'
-                          : 'Active Environment: ZATCA Simulation Sandbox. Invoices are signed with cryptographic compliance.',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF1E3A8A)),
+                          ? 'البيئة النشطة: منصة المحاكاة (Simulation Sandbox). الفواتير مشفرة 100% وفق ZATCA.'
+                          : 'Environment: Simulation Sandbox. Invoices cryptographically signed.',
+                      style: const TextStyle(fontSize: 10, color: Color(0xFF1E3A8A)),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showZatcaOnboardDialog(context),
-                    icon: const Icon(Icons.key_rounded, size: 15),
-                    label: Text(lang.isArabic ? 'تجديد شهادة CSID' : 'Renew CSID / OTP'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            const SizedBox(height: 12),
+            // Action Buttons (Responsive Layout)
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 320) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _showZatcaOnboardDialog(context),
+                        icon: const Icon(Icons.key_rounded, size: 14),
+                        label: Text(lang.isArabic ? 'تجديد شهادة CSID' : 'Renew CSID'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: _isTestingApi ? null : () => _testApiHealth(context, lang),
+                        icon: _isTestingApi
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.network_check_rounded, size: 14),
+                        label: Text(lang.isArabic ? 'فحص الاتصال' : 'Test API'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.saleGreen,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showZatcaOnboardDialog(context),
+                        icon: const Icon(Icons.key_rounded, size: 14),
+                        label: Text(
+                          lang.isArabic ? 'تجديد CSID' : 'Renew CSID',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isTestingApi
-                        ? null
-                        : () async {
-                            setState(() => _isTestingApi = true);
-                            await Future.delayed(const Duration(milliseconds: 600));
-                            if (mounted) {
-                              setState(() => _isTestingApi = false);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    lang.isArabic
-                                        ? 'اتصال بوابة فاتورة (ZATCA Fatoora API): متصل وجاهز بنجاح (HTTP 200 OK)!'
-                                        : 'ZATCA Fatoora Gateway: Connected & Healthy (HTTP 200 OK)!',
-                                  ),
-                                  backgroundColor: AppColors.saleGreen,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                              );
-                            }
-                          },
-                    icon: _isTestingApi
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Icon(Icons.network_check_rounded, size: 15),
-                    label: Text(lang.isArabic ? 'فحص الاتصال بالهيئة' : 'Test API Health'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.saleGreen,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _isTestingApi ? null : () => _testApiHealth(context, lang),
+                        icon: _isTestingApi
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.network_check_rounded, size: 14),
+                        label: Text(
+                          lang.isArabic ? 'فحص الاتصال' : 'Test Health',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.saleGreen,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -812,18 +877,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _testApiHealth(BuildContext context, AppLanguage lang) async {
+    setState(() => _isTestingApi = true);
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (mounted) {
+      setState(() => _isTestingApi = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            lang.isArabic
+                ? 'اتصال بوابة فاتورة (ZATCA Fatoora API): متصل وجاهز بنجاح (HTTP 200 OK)!'
+                : 'ZATCA Fatoora Gateway: Connected & Healthy (HTTP 200 OK)!',
+          ),
+          backgroundColor: AppColors.saleGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+  }
+
   Widget _buildZatcaFeatureBadge(String text, IconData icon, MaterialColor color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color.withOpacity(0.3), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color.shade700),
+          Icon(icon, size: 11, color: color.shade700),
           const SizedBox(width: 4),
           Text(
             text,
@@ -851,143 +936,138 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: Colors.teal.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.print_rounded, color: Colors.teal, size: 22),
+              child: const Icon(Icons.print_rounded, color: Colors.teal, size: 20),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     lang.isArabic ? 'الطابعة الحرارية الافتراضية' : 'Default Thermal Printer',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     lang.isArabic
-                        ? 'اختر الطابعة المتصلة عبر البلوتوث أو الشبكة'
-                        : 'Select connected Bluetooth or Wi-Fi ESC/POS printer',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        ? 'طابعة الفواتير (Bluetooth / Wi-Fi)'
+                        : 'Receipt printer (Bluetooth / Wi-Fi)',
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                   ),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           isExpanded: true,
           value: printer.selectedPrinterId,
           decoration: InputDecoration(
-            labelText: lang.isArabic ? 'طابعة الإيصالات المحددة' : 'Selected Receipt Printer',
-            prefixIcon: const Icon(Icons.bluetooth_connected, color: Colors.teal, size: 20),
+            labelText: lang.isArabic ? 'طابعة الإيصالات المحددة' : 'Selected Printer',
+            prefixIcon: const Icon(Icons.bluetooth_connected, color: Colors.teal, size: 18),
             filled: true,
             fillColor: Colors.grey.shade50,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: AppColors.cardBorder),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: AppColors.cardBorder),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Colors.teal, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
           items: printer.availablePrinters.map((p) {
             return DropdownMenuItem(
               value: p.id,
-              child: Text('${p.name} (${p.address})', overflow: TextOverflow.ellipsis),
+              child: Text('${p.name} (${p.address})', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
             );
           }).toList(),
           onChanged: (val) {
             if (val != null) printer.selectPrinter(val);
           },
         ),
-        const SizedBox(height: 16),
-        // Paper width & test print
-        Row(
+        const SizedBox(height: 14),
+        // Paper width & test print (Responsive Stacking)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    lang.isArabic ? 'عرض الورق الحراري:' : 'Paper Width:',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      _buildPaperWidthChip(
-                        label: '80mm',
-                        sublabel: lang.isArabic ? 'قياسي' : 'Standard',
-                        isSelected: printer.is80mm,
-                        onTap: () => printer.setPaperWidth(true),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildPaperWidthChip(
-                        label: '58mm',
-                        sublabel: lang.isArabic ? 'سيارة' : 'Van/Mobile',
-                        isSelected: !printer.is80mm,
-                        onTap: () => printer.setPaperWidth(false),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            Text(
+              lang.isArabic ? 'عرض الورق الحراري:' : 'Paper Width:',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
             ),
-            OutlinedButton.icon(
-              onPressed: _isTestingPrinter
-                  ? null
-                  : () async {
-                      setState(() => _isTestingPrinter = true);
-                      await Future.delayed(const Duration(milliseconds: 500));
-                      if (mounted) {
-                        setState(() => _isTestingPrinter = false);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              lang.isArabic
-                                  ? 'تم إرسال إيصال الاختبار التجريبي إلى الطابعة بنجاح!'
-                                  : 'Test receipt sent to printer successfully!',
-                            ),
-                            backgroundColor: AppColors.saleGreen,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                        );
-                      }
-                    },
-              icon: _isTestingPrinter
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.teal),
-                    )
-                  : const Icon(Icons.receipt_long_rounded, size: 16),
-              label: Text(lang.isArabic ? 'طباعة تجريبية' : 'Test Print'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.teal,
-                side: const BorderSide(color: Colors.teal),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildPaperWidthChip(
+                  label: '80mm',
+                  sublabel: lang.isArabic ? 'قياسي' : 'Standard',
+                  isSelected: printer.is80mm,
+                  onTap: () => printer.setPaperWidth(true),
+                ),
+                _buildPaperWidthChip(
+                  label: '58mm',
+                  sublabel: lang.isArabic ? 'سيارة' : 'Mobile',
+                  isSelected: !printer.is80mm,
+                  onTap: () => printer.setPaperWidth(false),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _isTestingPrinter ? null : () => _testPrint(context, lang),
+                  icon: _isTestingPrinter
+                      ? const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.teal),
+                        )
+                      : const Icon(Icons.receipt_long_rounded, size: 14),
+                  label: Text(lang.isArabic ? 'طباعة تجريبية' : 'Test Print'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.teal,
+                    side: const BorderSide(color: Colors.teal),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ],
     );
+  }
+
+  void _testPrint(BuildContext context, AppLanguage lang) async {
+    setState(() => _isTestingPrinter = true);
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      setState(() => _isTestingPrinter = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            lang.isArabic
+                ? 'تم إرسال إيصال الاختبار التجريبي إلى الطابعة بنجاح!'
+                : 'Test receipt sent to printer successfully!',
+          ),
+          backgroundColor: AppColors.saleGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
   }
 
   Widget _buildPaperWidthChip({
@@ -1000,7 +1080,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: isSelected ? Colors.teal : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(8),
@@ -1013,7 +1093,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(
                 color: isSelected ? Colors.white : AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontSize: 11,
               ),
             ),
             const SizedBox(width: 4),
@@ -1021,7 +1101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               '($sublabel)',
               style: TextStyle(
                 color: isSelected ? Colors.white.withOpacity(0.85) : AppColors.textSecondary,
-                fontSize: 10,
+                fontSize: 9,
               ),
             ),
           ],
@@ -1043,44 +1123,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildSwitchTile(
           title: lang.isArabic
               ? 'تخزين الجهاز الدائم (Offline-First)'
-              : 'Local Device Persistence (Offline-First)',
+              : 'Local Device Persistence',
           subtitle: lang.isArabic
-              ? 'العمل بكامل الميزات دون اتصال، وحفظ الفواتير محلياً على الجهاز'
-              : 'Operate fully offline with zero latency, storing all data in local database',
+              ? 'العمل دون اتصال، وحفظ الفواتير محلياً في الذاكرة'
+              : 'Operate offline with zero latency, storing all data locally',
           icon: Icons.storage_rounded,
           iconColor: const Color(0xFF6366F1),
           value: _offlineCacheEnabled,
           onChanged: (val) => setState(() => _offlineCacheEnabled = val),
         ),
-        const Divider(height: 20, thickness: 1, color: AppColors.cardBorder),
-        // Sync Status Row
-        Row(
+        const Divider(height: 18, thickness: 1, color: AppColors.cardBorder),
+        // Sync Status Row (Responsive Wrap)
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 10,
+          runSpacing: 10,
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.sync_rounded, color: Colors.blue, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    lang.isArabic ? 'المزامنة السحابية الذكية' : 'Smart Cloud Delta Sync',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${lang.isArabic ? "آخر مزامنة ناجحة:" : "Last successful sync:"} ${sync.lastSyncTime.toString().substring(0, 16)}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
+                  child: const Icon(Icons.sync_rounded, color: Colors.blue, size: 18),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lang.isArabic ? 'المزامنة السحابية الذكية' : 'Cloud Delta Sync',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                    Text(
+                      '${lang.isArabic ? "آخر مزامنة:" : "Last sync:"} ${sync.lastSyncTime.toString().substring(0, 16)}',
+                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ],
             ),
             ElevatedButton.icon(
               onPressed: () {
@@ -1090,24 +1176,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     content: Text(
                       lang.isArabic
                           ? 'جاري مزامنة التغييرات والفواتير مع السحابة...'
-                          : 'Syncing transactions and inventory with cloud server...',
+                          : 'Syncing transactions with cloud server...',
                     ),
                     backgroundColor: AppColors.primary,
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 );
               },
-              icon: const Icon(Icons.sync_rounded, size: 14),
+              icon: const Icon(Icons.sync_rounded, size: 13),
               label: Text(lang.isArabic ? 'مزامنة الآن' : 'Sync Now'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6366F1),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -1127,32 +1213,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) {
     return _buildGroupContainer(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 10,
+          runSpacing: 10,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: Colors.purple.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.security_rounded, color: Colors.purple, size: 22),
+                  child: const Icon(Icons.security_rounded, color: Colors.purple, size: 20),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      lang.isArabic ? 'مستوى الأمان والصلاحيات' : 'Security Level & Role',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      lang.isArabic ? 'مستوى الأمان والصلاحيات' : 'Security & Privileges',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       '${lang.isArabic ? "المستخدم:" : "User:"} ${auth.currentUser.name}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -1172,22 +1261,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   backgroundColor: Colors.purple,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                 ),
               ),
           ],
         ),
-        const Divider(height: 20, thickness: 1, color: AppColors.cardBorder),
+        const Divider(height: 18, thickness: 1, color: AppColors.cardBorder),
         Text(
-          lang.isArabic ? 'مصفوفة الصلاحيات الممنوحة لحسابك:' : 'Granted Permissions Matrix:',
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+          lang.isArabic ? 'مصفوفة الصلاحيات الممنوحة لحسابك:' : 'Granted Privileges Matrix:',
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 6,
+          runSpacing: 6,
           children: [
             _buildPermBadge(lang.isArabic ? 'إصدار فواتير' : 'Create Invoices', auth.permissions.canCreateSale),
             _buildPermBadge(lang.isArabic ? 'تعديل فواتير' : 'Edit Invoices', auth.permissions.canEditSale),
@@ -1217,29 +1306,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: Colors.orange.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.restore_page_rounded, color: Colors.orange.shade800, size: 22),
+              child: Icon(Icons.restore_page_rounded, color: Colors.orange.shade800, size: 20),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     lang.isArabic ? 'استعادة البيانات التجريبية الأولية' : 'Restore Initial Demo Data',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     lang.isArabic
-                        ? 'إعادة ضبط المخزون والأصناف والعملاء إلى القيم الافتراضية'
-                        : 'Reset database to factory demo inventory, products, and customers',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        ? 'إعادة ضبط المخزون والأصناف والعملاء للقيم الافتراضية'
+                        : 'Reset database to factory demo inventory and products',
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -1252,14 +1341,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.orange.shade800,
                   side: BorderSide(color: Colors.orange.shade800),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                 ),
               )
             else
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(6),
@@ -1267,7 +1356,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 child: Text(
                   lang.isArabic ? 'صلاحية محظورة' : 'Admin Only',
-                  style: const TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 9, color: AppColors.textMuted, fontWeight: FontWeight.bold),
                 ),
               ),
           ],
@@ -1285,20 +1374,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.verified_rounded, size: 14, color: AppColors.saleGreen),
+            const Icon(Icons.verified_rounded, size: 13, color: AppColors.saleGreen),
             const SizedBox(width: 6),
             Text(
               lang.isArabic
                   ? 'مندوب لإدارة مبيعات التوزيع والفوترة الفورية'
                   : 'Mandhoob Distribution & Mobile POS ERP',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           'Version 1.0.0 (Build 2026.11) • Saudi ZATCA Phase 2 Certified',
-          style: TextStyle(fontSize: 11, color: AppColors.textMuted.withOpacity(0.8)),
+          style: TextStyle(fontSize: 10, color: AppColors.textMuted.withOpacity(0.8)),
         ),
       ],
     );
@@ -1318,7 +1407,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: iconColor),
+          Icon(icon, size: 17, color: iconColor),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -1327,7 +1416,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                     letterSpacing: 0.2,
@@ -1335,7 +1424,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -1347,7 +1436,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildGroupContainer({required List<Widget> children}) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1378,27 +1467,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Row(
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
             color: iconColor.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: iconColor, size: 20),
+          child: Icon(icon, color: iconColor, size: 18),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -1420,23 +1509,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: isHighlight ? AppColors.primary : AppColors.textSecondary),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
-            color: isHighlight ? AppColors.textPrimary : AppColors.textSecondary,
+        Icon(icon, size: 15, color: isHighlight ? AppColors.primary : AppColors.textSecondary),
+        const SizedBox(width: 6),
+        Expanded(
+          flex: 4,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
+              color: isHighlight ? AppColors.textPrimary : AppColors.textSecondary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: isHighlight ? AppColors.primary : AppColors.textPrimary,
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 5,
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: isHighlight ? AppColors.primary : AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -1445,10 +1545,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildPermBadge(String label, bool allowed) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: allowed ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: allowed ? const Color(0xFF86EFAC) : const Color(0xFFFCA5A5),
           width: 0.8,
@@ -1459,14 +1559,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Icon(
             allowed ? Icons.check_circle_rounded : Icons.cancel_rounded,
-            size: 13,
+            size: 11,
             color: allowed ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.bold,
               color: allowed ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
             ),
@@ -1484,7 +1584,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
             Icon(Icons.security, color: AppColors.saleGreen),
@@ -1492,7 +1592,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Expanded(
               child: Text(
                 'ربط جهاز الفوترة (ZATCA Onboarding)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -1503,10 +1603,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'أدخل رمز التحقق (OTP) الصادر من بوابة فاتورة (Fatoora Portal) لاستخراج وتجديد شهادة الاعتماد الرقمية (CSID):',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+              'أدخل رمز التحقق (OTP) الصادر من منصة فاتورة (Fatoora Portal) لاستخراج وتجديد شهادة الاعتماد الرقمية (CSID):',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             TextField(
               controller: otpController,
               keyboardType: TextInputType.number,
@@ -1517,7 +1617,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 prefixIcon: const Icon(Icons.password_rounded),
                 filled: true,
                 fillColor: Colors.grey.shade50,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
           ],
@@ -1532,7 +1632,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundColor: AppColors.saleGreen,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () {
               Navigator.pop(ctx);
@@ -1543,7 +1643,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   backgroundColor: AppColors.saleGreen,
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               );
             },
@@ -1558,7 +1658,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800),
@@ -1566,7 +1666,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Expanded(
               child: Text(
                 lang.isArabic ? 'استعادة البيانات الافتراضية' : 'Restore Demo Data',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -1575,7 +1675,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           lang.isArabic
               ? 'هل تريد بالتأكيد مسح التخزين المحلي واستعادة الأصناف والمستودعات والعملاء الافتراضيين؟'
               : 'Are you sure you want to clear local storage and restore default demo products, warehouses, and customers?',
-          style: const TextStyle(fontSize: 13, height: 1.4),
+          style: const TextStyle(fontSize: 12, height: 1.4),
         ),
         actions: [
           TextButton(
@@ -1587,7 +1687,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundColor: Colors.orange.shade800,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
               await db.resetToInitialDemoData();
@@ -1602,7 +1702,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     backgroundColor: Colors.orange.shade800,
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 );
               }

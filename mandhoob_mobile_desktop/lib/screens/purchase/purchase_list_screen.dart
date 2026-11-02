@@ -3,13 +3,11 @@ import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
+import '../../models/stock_transfer_model.dart';
 import '../../models/supplier_model.dart';
 import '../../models/product_model.dart';
-import '../../models/stock_transfer_model.dart';
 import '../../models/expense_model.dart';
 import '../../widgets/date_filter_bar.dart';
-import '../suppliers/supplier_detail_screen.dart';
-import '../suppliers/payment_out_dialog.dart';
 
 class PurchaseListScreen extends StatefulWidget {
   const PurchaseListScreen({super.key});
@@ -18,24 +16,11 @@ class PurchaseListScreen extends StatefulWidget {
   State<PurchaseListScreen> createState() => _PurchaseListScreenState();
 }
 
-class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  String _searchQuery = '';
+class _PurchaseListScreenState extends State<PurchaseListScreen> {
   String _billSearchQuery = '';
   DateFilterPreset _billDatePreset = DateFilterPreset.all;
   DateTimeRange? _billCustomRange;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  String _paymentFilter = 'all'; // 'all', 'credit', 'cash'
 
   @override
   Widget build(BuildContext context) {
@@ -47,25 +32,14 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
         final lang = AppLanguage();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
-        // Filter suppliers
-        final filteredSuppliers = db.suppliers.where((s) {
-          if (_searchQuery.isNotEmpty) {
-            final q = _searchQuery.toLowerCase().trim();
-            return s.nameAr.toLowerCase().contains(q) ||
-                s.nameEn.toLowerCase().contains(q) ||
-                s.phone.contains(q) ||
-                (s.vatNumber?.contains(q) ?? false) ||
-                (s.crNumber?.contains(q) ?? false) ||
-                (s.city?.toLowerCase().contains(q) ?? false);
-          }
-          return true;
-        }).toList();
-
-        // Inward Purchase Bills from expenses / ledger with Date + Search filtering
+        // Inward Purchase Bills from expenses/ledger with Date + Search filtering
         final purchaseBills = db.expenses
             .where((e) => e.expenseNumber.startsWith('PUR'))
             .where((e) => DateFilterHelper.matches(e.date, _billDatePreset, _billCustomRange))
             .where((e) {
+              if (_paymentFilter == 'credit' && !e.paymentMode.toLowerCase().contains('credit') && !e.paymentMode.contains('آجل')) return false;
+              if (_paymentFilter == 'cash' && (e.paymentMode.toLowerCase().contains('credit') || e.paymentMode.contains('آجل'))) return false;
+
               if (_billSearchQuery.isNotEmpty) {
                 final q = _billSearchQuery.toLowerCase().trim();
                 return e.expenseNumber.toLowerCase().contains(q) ||
@@ -78,526 +52,338 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
             .toList();
 
         final totalPurchaseAmount = purchaseBills.fold(0.0, (sum, b) => sum + b.totalWithVat);
+        final totalVatAmount = purchaseBills.fold(0.0, (sum, b) => sum + b.vatAmount);
 
         return Scaffold(
+          backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: Text(lang.isArabic ? 'المشتريات والموردين' : 'Purchases & Suppliers'),
+            title: Text(
+              lang.isArabic ? 'إدارة المشتريات وفواتير التوريد' : 'Purchases & Inward Stock',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.person_add_alt_1),
-                tooltip: lang.isArabic ? 'إضافة مورد جديد' : 'Add New Supplier',
-                onPressed: () => _showAddSupplierDialog(context, db, lang),
-              ),
-              IconButton(
-                icon: const Icon(Icons.post_add),
+                icon: const Icon(Icons.post_add_rounded),
                 tooltip: lang.isArabic ? 'تسجيل فاتورة شراء واردة' : 'Record Purchase Bill',
                 onPressed: () => _showCreatePurchaseBillDialog(context, db, auth, lang),
-              ),
-            ],
-            bottom: TabBar(
-              controller: _tabController,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              indicatorColor: Colors.white,
-              indicatorWeight: 3,
-              tabs: [
-                Tab(
-                  icon: const Icon(Icons.business, size: 20),
-                  text: lang.isArabic ? 'الموردين والائتمان' : 'Suppliers & Payables',
-                ),
-                Tab(
-                  icon: const Icon(Icons.receipt_long, size: 20),
-                  text: lang.isArabic ? 'فواتير المشتريات (${purchaseBills.length})' : 'Purchase Bills (${purchaseBills.length})',
-                ),
-              ],
-            ),
-          ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              // -----------------------------------------------------------------
-              // Tab 1: Suppliers & Credit
-              // -----------------------------------------------------------------
-              Column(
-                children: [
-                  // Search Bar
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    color: Colors.white,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: lang.isArabic
-                            ? 'ابحث باسم المورد أو رقم الهاتف أو الرقم الضريبي...'
-                            : 'Search supplier, phone or VAT #...',
-                        hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                        prefixIcon: const Icon(Icons.search, color: AppColors.purchaseBlue, size: 22),
-                        isDense: true,
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(icon: const Icon(Icons.clear, size: 18), onPressed: () => setState(() => _searchQuery = ''))
-                            : null,
-                      ),
-                      onChanged: (val) => setState(() => _searchQuery = val),
-                    ),
-                  ),
-
-                  // Payables Summary Banner
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue.shade200),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              const Icon(Icons.account_balance_wallet, color: AppColors.purchaseBlue, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  lang.isArabic ? "إجمالي المستحقات للموردين:" : "Total Payables to Suppliers:",
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          '${db.totalPayables.toStringAsFixed(2)} $curr',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.purchaseBlue),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Suppliers List
-                  Expanded(
-                    child: filteredSuppliers.isEmpty
-                        ? Center(
-                            child: Text(lang.isArabic ? 'لا يوجد موردون مطابقون للبحث' : 'No suppliers found'),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.only(left: 14, right: 14, top: 4, bottom: 96),
-                            itemCount: filteredSuppliers.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final supp = filteredSuppliers[index];
-                              final suppName = lang.isArabic ? supp.nameAr : supp.nameEn;
-                              final hasPayable = supp.currentBalance > 0;
-
-                              return Card(
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(12),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => SupplierDetailScreen(supplier: supp)),
-                                    );
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(14),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 18,
-                                              backgroundColor: AppColors.purchaseBlue.withOpacity(0.12),
-                                              child: const Icon(Icons.business, color: AppColors.purchaseBlue, size: 20),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(suppName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    '${supp.phone} • ${supp.city ?? ""}',
-                                                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                                                  ),
-                                                  if (supp.vatNumber != null)
-                                                    Text(
-                                                      '${lang.isArabic ? "الرقم الضريبي" : "VAT"}: ${supp.vatNumber}',
-                                                      style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  '${supp.currentBalance.toStringAsFixed(2)} $curr',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 14,
-                                                    color: hasPayable ? AppColors.purchaseBlue : Colors.green,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  hasPayable ? (lang.isArabic ? 'مستحق له' : 'Payable') : (lang.isArabic ? 'مسدد' : 'Settled'),
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: hasPayable ? AppColors.purchaseBlue : Colors.green,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        const Divider(height: 16),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              '${lang.isArabic ? "سقف الائتمان" : "Limit"}: ${supp.creditLimit.toStringAsFixed(0)} $curr',
-                                              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                                            ),
-                                            Row(
-                                              children: [
-                                                OutlinedButton.icon(
-                                                  onPressed: () {
-                                                    showDialog(
-                                                      context: context,
-                                                      builder: (_) => PaymentOutDialog(supplier: supp),
-                                                    );
-                                                  },
-                                                  icon: const Icon(Icons.payment, size: 14),
-                                                  label: Text(lang.isArabic ? 'سند صرف' : 'Pay Out', style: const TextStyle(fontSize: 11)),
-                                                  style: OutlinedButton.styleFrom(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                    minimumSize: Size.zero,
-                                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                const Icon(Icons.chevron_right, size: 16, color: AppColors.purchaseBlue),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-
-              // -----------------------------------------------------------------
-              // Tab 2: Purchase Invoices / Bills
-              // -----------------------------------------------------------------
-              Column(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.shade200),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${lang.isArabic ? "إجمالي فواتير الشراء المعروضة" : "Displayed Purchases"}: (${purchaseBills.length})',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        Text(
-                          '${totalPurchaseAmount.toStringAsFixed(2)} $curr',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.green),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Search & Date Filter Bar for Purchase Bills
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Column(
-                      children: [
-                        TextField(
-                          decoration: InputDecoration(
-                            hintText: lang.isArabic
-                                ? 'ابحث برقم فاتورة الشراء أو البيان أو طريقة السداد...'
-                                : 'Search bill #, description, or payment...',
-                            hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                            prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 20),
-                            suffixIcon: _billSearchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear, size: 16),
-                                    onPressed: () => setState(() => _billSearchQuery = ''),
-                                  )
-                                : null,
-                            fillColor: Colors.grey.shade100,
-                            filled: true,
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          ),
-                          onChanged: (val) => setState(() => _billSearchQuery = val),
-                        ),
-                        const SizedBox(height: 6),
-                        DateFilterBar(
-                          selectedPreset: _billDatePreset,
-                          customRange: _billCustomRange,
-                          onPresetChanged: (preset) => setState(() => _billDatePreset = preset),
-                          onCustomRangeChanged: (range) => setState(() => _billCustomRange = range),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-
-                  Expanded(
-                    child: purchaseBills.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade400),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    lang.isArabic
-                                        ? 'لا توجد فواتير مشتريات مسجلة بعد'
-                                        : 'No purchase bills recorded yet',
-                                    style: const TextStyle(color: AppColors.textSecondary),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ElevatedButton.icon(
-                                    onPressed: () => _showCreatePurchaseBillDialog(context, db, auth, lang),
-                                    icon: const Icon(Icons.add),
-                                    label: Text(lang.isArabic ? '+ تسجيل أول فاتورة مشتريات' : '+ Record First Purchase Bill'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.only(left: 14, right: 14, top: 4, bottom: 96),
-                            itemCount: purchaseBills.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              final bill = purchaseBills[index];
-                              return Card(
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.blue.shade50,
-                                    child: const Icon(Icons.receipt, color: AppColors.purchaseBlue),
-                                  ),
-                                  title: Text(bill.expenseNumber, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text(
-                                    '${bill.description}\n${bill.date.toString().substring(0, 16)} • ${bill.paymentMode}',
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
-                                  trailing: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        '${bill.totalWithVat.toStringAsFixed(2)} $curr',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.purchaseBlue, fontSize: 13),
-                                      ),
-                                      Text(
-                                        'VAT: ${bill.vatAmount.toStringAsFixed(2)}',
-                                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
               ),
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showCreatePurchaseBillDialog(context, db, auth, lang),
+            icon: const Icon(Icons.add),
+            label: Text(lang.isArabic ? 'فاتورة شراء جديدة' : 'New Purchase Bill'),
             backgroundColor: AppColors.purchaseBlue,
-            icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
-            label: Text(
-              lang.isArabic ? '+ فاتورة شراء واردة' : '+ Inward Purchase Bill',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
+            foregroundColor: Colors.white,
+          ),
+          body: Column(
+            children: [
+              // 1. KPI Purchases Overview Banner
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E3A8A), Color(0xFF0D9488)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0D9488).withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lang.isArabic ? 'إجمالي المشتريات المعروضة' : 'Total Purchases Filtered',
+                            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 11),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${totalPurchaseAmount.toStringAsFixed(2)} $curr',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            lang.isArabic
+                                ? 'ضريبة المشتريات المستردة: ${totalVatAmount.toStringAsFixed(2)} $curr'
+                                : 'Input VAT (Recoverable): ${totalVatAmount.toStringAsFixed(2)} $curr',
+                            style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 24),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${purchaseBills.length}',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          Text(
+                            lang.isArabic ? 'فاتورة شراء' : 'Bills',
+                            style: const TextStyle(color: Colors.white70, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 2. Search & Text Filter
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: lang.isArabic
+                        ? 'ابحث برقم الفاتورة، اسم المورد أو طريقة الدفع...'
+                        : 'Search bill #, supplier or payment mode...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.cardBorder),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.cardBorder),
+                    ),
+                  ),
+                  onChanged: (val) => setState(() => _billSearchQuery = val),
+                ),
+              ),
+
+              // 3. Date Filter Bar
+              DateFilterBar(
+                selectedPreset: _billDatePreset,
+                customRange: _billCustomRange,
+                onPresetChanged: (preset) => setState(() => _billDatePreset = preset),
+                onCustomRangeChanged: (range) => setState(() => _billCustomRange = range),
+              ),
+
+              // 4. Payment Mode Filter Chips
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                child: Row(
+                  children: [
+                    _buildPaymentChip(
+                      label: lang.isArabic ? 'الكل' : 'All',
+                      isSelected: _paymentFilter == 'all',
+                      onTap: () => setState(() => _paymentFilter = 'all'),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildPaymentChip(
+                      label: lang.isArabic ? 'آجل (على الحساب)' : 'Credit (Payable)',
+                      isSelected: _paymentFilter == 'credit',
+                      color: Colors.orange.shade800,
+                      onTap: () => setState(() => _paymentFilter = 'credit'),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildPaymentChip(
+                      label: lang.isArabic ? 'نقداً / بنك' : 'Cash / Bank',
+                      isSelected: _paymentFilter == 'cash',
+                      color: AppColors.saleGreen,
+                      onTap: () => setState(() => _paymentFilter = 'cash'),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              // 5. Purchase Bills List
+              Expanded(
+                child: purchaseBills.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.receipt_long_outlined, size: 54, color: Colors.grey.shade400),
+                            const SizedBox(height: 12),
+                            Text(
+                              lang.isArabic ? 'لا توجد فواتير شراء مطابقة' : 'No purchase bills match your filters',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(left: 14, right: 14, bottom: 90),
+                        itemCount: purchaseBills.length,
+                        itemBuilder: (context, index) {
+                          final bill = purchaseBills[index];
+                          final isCredit = bill.paymentMode.toLowerCase().contains('credit') ||
+                              bill.paymentMode.contains('آجل');
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.cardBorder),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.02),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: AppColors.purchaseBlue.withOpacity(0.12),
+                                        child: const Icon(Icons.inventory_rounded, color: AppColors.purchaseBlue, size: 20),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              bill.expenseNumber,
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              bill.description,
+                                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Total Amount with VAT
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            '${bill.totalWithVat.toStringAsFixed(2)} $curr',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.purchaseBlue,
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isCredit ? Colors.orange.shade50 : Colors.green.shade50,
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(
+                                                color: isCredit ? Colors.orange.shade200 : Colors.green.shade200,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              isCredit ? (lang.isArabic ? 'آجل' : 'Credit') : (lang.isArabic ? 'نقدي' : 'Cash'),
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                                color: isCredit ? Colors.orange.shade800 : Colors.green.shade800,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const Divider(height: 18, thickness: 0.8, color: AppColors.cardBorder),
+                                  // Details info row
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textSecondary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        bill.date.toString().substring(0, 10),
+                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      const Icon(Icons.warehouse_outlined, size: 12, color: AppColors.textSecondary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        lang.isArabic ? 'المستودع الرئيسي' : 'Main Warehouse',
+                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        'VAT (15%): ${bill.vatAmount.toStringAsFixed(2)} $curr',
+                                        style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Dialog: Add New Supplier
-  // ---------------------------------------------------------------------------
-  void _showAddSupplierDialog(BuildContext context, DatabaseService db, AppLanguage lang) {
-    final nameArController = TextEditingController();
-    final nameEnController = TextEditingController();
-    final phoneController = TextEditingController();
-    final vatController = TextEditingController();
-    final crController = TextEditingController();
-    final creditLimitController = TextEditingController(text: '50000');
-    final graceDaysController = TextEditingController(text: '45');
-    final cityController = TextEditingController(text: 'الرياض - Riyadh');
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+  Widget _buildPaymentChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    final activeColor = color ?? AppColors.purchaseBlue;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? activeColor : AppColors.cardBorder,
           ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  lang.isArabic ? 'إضافة مورد معتمد جديد' : 'Add New Supplier',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: nameArController,
-                  decoration: InputDecoration(
-                    labelText: lang.isArabic ? 'اسم المورد / الشركة بالعربي *' : 'Supplier Name (Arabic) *',
-                    prefixIcon: const Icon(Icons.business),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: nameEnController,
-                  decoration: InputDecoration(
-                    labelText: lang.isArabic ? 'اسم المورد بالإنجليزي' : 'Supplier Name (English)',
-                    prefixIcon: const Icon(Icons.language),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: InputDecoration(
-                          labelText: lang.isArabic ? 'رقم الهاتف / الجوال *' : 'Phone Number *',
-                          prefixIcon: const Icon(Icons.phone),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: vatController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: lang.isArabic ? 'الرقم الضريبي (15 رقم)' : 'VAT # (15 digits)',
-                          prefixIcon: const Icon(Icons.verified),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: creditLimitController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: lang.isArabic ? 'سقف الائتمان (ر.س)' : 'Credit Limit (SAR)',
-                          prefixIcon: const Icon(Icons.credit_card),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: graceDaysController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: lang.isArabic ? 'مهلة السداد (يوم)' : 'Terms (Days)',
-                          prefixIcon: const Icon(Icons.timer_outlined),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: cityController,
-                  decoration: InputDecoration(
-                    labelText: lang.isArabic ? 'المدينة' : 'City',
-                    prefixIcon: const Icon(Icons.location_city),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.purchaseBlue),
-                    onPressed: () {
-                      final nameAr = nameArController.text.trim();
-                      final phone = phoneController.text.trim();
-                      if (nameAr.isEmpty || phone.isEmpty) return;
-
-                      final newSupp = SupplierModel(
-                        id: 'SUPP-${DateTime.now().millisecondsSinceEpoch}',
-                        nameAr: nameAr,
-                        nameEn: nameEnController.text.trim().isEmpty ? nameAr : nameEnController.text.trim(),
-                        phone: phone,
-                        vatNumber: vatController.text.trim().isEmpty ? null : vatController.text.trim(),
-                        crNumber: crController.text.trim().isEmpty ? null : crController.text.trim(),
-                        creditLimit: double.tryParse(creditLimitController.text.trim()) ?? 50000.0,
-                        creditPeriodDays: int.tryParse(graceDaysController.text.trim()) ?? 45,
-                        city: cityController.text.trim(),
-                      );
-
-                      db.addSupplier(newSupp);
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(lang.isArabic ? 'تمت إضافة المورد بنجاح!' : 'Supplier added successfully!'),
-                          backgroundColor: AppColors.saleGreen,
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.check, color: Colors.white),
-                    label: Text(
-                      lang.isArabic ? 'حفظ المورد' : 'Save Supplier',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : AppColors.textPrimary,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -613,7 +399,11 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
     if (db.suppliers.isEmpty || db.products.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(lang.isArabic ? 'يرجى تسجيل مورد وأصناف أولاً' : 'Please register suppliers and products first'),
+          content: Text(
+            lang.isArabic
+                ? 'يرجى تسجيل مورد وأصناف أولاً قبل إنشاء فاتورة شراء'
+                : 'Please register suppliers and products first',
+          ),
           backgroundColor: AppColors.expenseRed,
         ),
       );
@@ -635,6 +425,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
+        final curr = lang.isArabic ? 'ر.س' : 'SAR';
         return StatefulBuilder(
           builder: (context, setModalState) {
             final qty = double.tryParse(qtyController.text) ?? 0.0;
@@ -656,7 +447,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      lang.isArabic ? 'تسجيل فاتورة شراء واردة وزيادة المخزون' : 'Record Inward Purchase Bill',
+                      lang.isArabic ? 'تسجيل فاتورة شراء واردة وتوريد المخزون' : 'Record Inward Purchase Bill',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 14),
@@ -665,7 +456,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
                     DropdownButtonFormField<String>(
                       value: selectedSupplierId,
                       isExpanded: true,
-                      decoration: InputDecoration(labelText: lang.isArabic ? 'المورد المعتمد' : 'Supplier'),
+                      decoration: InputDecoration(labelText: lang.isArabic ? 'المورد المعتمد *' : 'Supplier *'),
                       items: db.suppliers.map((s) {
                         return DropdownMenuItem(
                           value: s.id,
@@ -682,13 +473,17 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
                     DropdownButtonFormField<String>(
                       value: selectedWarehouseId,
                       isExpanded: true,
-                      decoration: InputDecoration(labelText: lang.isArabic ? 'مستودع الاستلام' : 'Receiving Warehouse'),
-                      items: db.warehouses.map((w) {
-                        return DropdownMenuItem(
-                          value: w.id,
-                          child: Text(w.nameAr, overflow: TextOverflow.ellipsis),
-                        );
-                      }).toList(),
+                      decoration: InputDecoration(labelText: lang.isArabic ? 'المستودع المستلم *' : 'Receiving Warehouse *'),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'WH-MAIN',
+                          child: Text(lang.isArabic ? 'المستودع المركزي - الرياض' : 'Central Warehouse - Riyadh'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'WH-DEPOT',
+                          child: Text(lang.isArabic ? 'مستودع جدة الإقليمي' : 'Jeddah Regional Depot'),
+                        ),
+                      ],
                       onChanged: (val) {
                         if (val != null) setModalState(() => selectedWarehouseId = val);
                       },
@@ -699,47 +494,42 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
                     DropdownButtonFormField<String>(
                       value: selectedProductId,
                       isExpanded: true,
-                      decoration: InputDecoration(labelText: lang.isArabic ? 'الصنف المستلم' : 'Product'),
+                      decoration: InputDecoration(labelText: lang.isArabic ? 'الصنف المورد *' : 'Purchased Product *'),
                       items: db.products.map((p) {
                         return DropdownMenuItem(
                           value: p.id,
-                          child: Text('${p.nameAr} (${p.sku})', overflow: TextOverflow.ellipsis),
+                          child: Text('${lang.isArabic ? p.nameAr : p.nameEn} (حالي: ${p.getTotalStock().toStringAsFixed(0)})', overflow: TextOverflow.ellipsis),
                         );
                       }).toList(),
                       onChanged: (val) {
                         if (val != null) {
                           setModalState(() {
                             selectedProductId = val;
-                            final prod = db.products.firstWhere((p) => p.id == val);
-                            unitCostController.text = prod.wholesalePrice.toStringAsFixed(2);
+                            final p = db.products.firstWhere((item) => item.id == val);
+                            unitCostController.text = p.wholesalePrice.toStringAsFixed(2);
                           });
                         }
                       },
                     ),
                     const SizedBox(height: 10),
 
+                    // Quantity and Cost
                     Row(
                       children: [
                         Expanded(
                           child: TextField(
                             controller: qtyController,
                             keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: lang.isArabic ? 'الكمية المستلمة' : 'Quantity',
-                              prefixIcon: const Icon(Icons.numbers),
-                            ),
+                            decoration: InputDecoration(labelText: lang.isArabic ? 'الكمية الموردة *' : 'Quantity *'),
                             onChanged: (_) => setModalState(() {}),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: TextField(
                             controller: unitCostController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: lang.isArabic ? 'سعر التكلفة (ر.س)' : 'Unit Cost (SAR)',
-                              prefixIcon: const Icon(Icons.attach_money),
-                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(labelText: lang.isArabic ? 'سعر الشراء الفردي *' : 'Unit Cost *'),
                             onChanged: (_) => setModalState(() {}),
                           ),
                         ),
@@ -747,14 +537,15 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
                     ),
                     const SizedBox(height: 10),
 
+                    // Payment mode
                     DropdownButtonFormField<String>(
                       value: paymentMode,
                       isExpanded: true,
-                      decoration: InputDecoration(labelText: lang.isArabic ? 'طريقة السداد' : 'Payment Terms'),
+                      decoration: InputDecoration(labelText: lang.isArabic ? 'طريقة السداد' : 'Payment Mode'),
                       items: const [
-                        DropdownMenuItem(value: 'Credit - آجل', child: Text('آجل (زيادة رصيد المورد الدائن)')),
-                        DropdownMenuItem(value: 'Cash - نقداً', child: Text('نقداً (من صندوق المشتريات)')),
-                        DropdownMenuItem(value: 'Bank - تحويل بنكي', child: Text('تحويل بنكي رسمي')),
+                        DropdownMenuItem(value: 'Credit - آجل', child: Text('Credit - آجل (ذمم دائنة)')),
+                        DropdownMenuItem(value: 'Cash - نقداً', child: Text('Cash - نقداً (الخزينة)')),
+                        DropdownMenuItem(value: 'Bank Transfer - تحويل بنكي', child: Text('Bank Transfer - تحويل بنكي')),
                       ],
                       onChanged: (val) {
                         if (val != null) setModalState(() => paymentMode = val);
@@ -764,76 +555,78 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
 
                     TextField(
                       controller: notesController,
-                      decoration: InputDecoration(
-                        labelText: lang.isArabic ? 'ملاحظات / رقم بوليصة الشحن' : 'Notes / B/L #',
-                        prefixIcon: const Icon(Icons.note),
-                      ),
+                      decoration: InputDecoration(labelText: lang.isArabic ? 'ملاحظات ورقم بوليصة الشحن' : 'Notes / Waybill Ref'),
                     ),
                     const SizedBox(height: 14),
 
-                    // Calculations preview
+                    // Bill Summary Card
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
                       child: Column(
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(lang.isArabic ? 'المبلغ قبل الضريبة:' : 'Subtotal:'),
-                              Text('${subtotal.toStringAsFixed(2)} SAR'),
+                              Text(lang.isArabic ? 'المجموع قبل الضريبة:' : 'Subtotal:'),
+                              Text('${subtotal.toStringAsFixed(2)} $curr'),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(lang.isArabic ? 'ضريبة المدخلات (15%):' : 'Input VAT (15%):'),
-                              Text('${vat.toStringAsFixed(2)} SAR'),
+                              Text(lang.isArabic ? 'ضريبة القيمة المضافة (15%):' : 'VAT (15%):'),
+                              Text('${vat.toStringAsFixed(2)} $curr', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                             ],
                           ),
-                          const Divider(height: 10),
+                          const Divider(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                lang.isArabic ? 'الإجمالي الشامل:' : 'Grand Total:',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                lang.isArabic ? 'إجمالي الفاتورة النهائي:' : 'Grand Total:',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                               ),
                               Text(
-                                '${total.toStringAsFixed(2)} SAR',
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.purchaseBlue),
+                                '${total.toStringAsFixed(2)} $curr',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.purchaseBlue),
                               ),
                             ],
                           ),
                         ],
                       ),
                     ),
-
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
 
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.purchaseBlue),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.purchaseBlue,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                         onPressed: () {
                           if (qty <= 0 || cost <= 0) return;
 
+                          final supp = db.suppliers.firstWhere((s) => s.id == selectedSupplierId);
                           final prod = db.products.firstWhere((p) => p.id == selectedProductId);
-                          final item = StockTransferItem(
-                            productId: prod.id,
-                            productName: prod.nameAr,
-                            quantity: qty,
-                            unit: prod.baseUnit,
-                          );
 
                           db.recordPurchaseBill(
                             supplierId: selectedSupplierId,
                             warehouseId: selectedWarehouseId,
-                            items: [item],
+                            items: [
+                              StockTransferItem(
+                                productId: prod.id,
+                                productName: prod.nameAr,
+                                quantity: qty,
+                                unit: prod.baseUnit,
+                              ),
+                            ],
                             subtotal: subtotal,
                             vatAmount: vat,
                             paymentMode: paymentMode,
@@ -843,12 +636,13 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
                           );
 
                           Navigator.pop(ctx);
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
                                 lang.isArabic
-                                    ? 'تم تسجيل فاتورة الشراء وزيادة رصيد المستودع بنجاح!'
-                                    : 'Purchase bill recorded and stock increased successfully!',
+                                    ? 'تم تسجيل فاتورة الشراء وتوريد الكمية ($qty) إلى المخزون بنجاح!'
+                                    : 'Purchase bill recorded and stock increased by ($qty) successfully!',
                               ),
                               backgroundColor: AppColors.saleGreen,
                             ),
@@ -856,7 +650,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
                         },
                         icon: const Icon(Icons.check, color: Colors.white),
                         label: Text(
-                          lang.isArabic ? 'اعتماد فاتورة الشراء وإدخال المخزون' : 'Approve Bill & Receive Stock',
+                          lang.isArabic ? 'اعتماد فاتورة الشراء وتوريد البضاعة' : 'Confirm Purchase & Stock In',
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ),

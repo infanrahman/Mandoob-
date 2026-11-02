@@ -303,11 +303,6 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                           label: Text(lang.translate('sales')),
                         ),
                         NavigationRailDestination(
-                          icon: const Icon(Icons.shopping_bag_outlined),
-                          selectedIcon: const Icon(Icons.shopping_bag),
-                          label: Text(lang.translate('purchases')),
-                        ),
-                        NavigationRailDestination(
                           icon: const Icon(Icons.inventory_2_outlined),
                           selectedIcon: const Icon(Icons.inventory_2),
                           label: Text(lang.translate('inventory')),
@@ -316,6 +311,16 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                           icon: const Icon(Icons.people_alt_outlined),
                           selectedIcon: const Icon(Icons.people_alt),
                           label: Text(lang.translate('customers')),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.shopping_bag_outlined),
+                          selectedIcon: const Icon(Icons.shopping_bag),
+                          label: Text(lang.translate('purchases')),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.business_outlined),
+                          selectedIcon: const Icon(Icons.business),
+                          label: Text(lang.translate('suppliers')),
                         ),
                         NavigationRailDestination(
                           icon: const Icon(Icons.receipt_long_outlined),
@@ -410,6 +415,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
     final lang = AppLanguage();
     final auth = AuthService();
     final canPurchases = auth.can((p) => p.canCreatePurchase);
+    final canSuppliers = auth.can((p) => p.canManageSuppliers || p.canCreatePurchase);
     final canExpenses = auth.can((p) => p.canManageExpenses);
     final canReports = auth.can((p) => p.canViewReports);
 
@@ -466,11 +472,42 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                       ],
                     ],
                   ),
-                  subtitle: Text(lang.isArabic ? 'إدارة الموردين وأوامر الشراء' : 'Suppliers & Purchase Invoices'),
+                  subtitle: Text(lang.isArabic ? 'فواتير وتوريدات المشتريات' : 'Purchase Invoices & Inward Stock'),
                   trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
                   onTap: () {
                     Navigator.pop(ctx);
-                    widget.onNavigationIndexChanged(2);
+                    widget.onNavigationIndexChanged(4);
+                  },
+                ),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: canSuppliers ? Colors.indigo.withOpacity(0.12) : Colors.grey.shade200,
+                    child: Icon(
+                      canSuppliers ? Icons.business : Icons.lock_outline,
+                      color: canSuppliers ? Colors.indigo : Colors.grey.shade600,
+                    ),
+                  ),
+                  title: Row(
+                    children: [
+                      Text(lang.translate('suppliers'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (!canSuppliers) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(4)),
+                          child: Text(
+                            lang.isArabic ? 'صلاحية مقيدة' : 'Restricted',
+                            style: TextStyle(fontSize: 10, color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  subtitle: Text(lang.isArabic ? 'دليل الموردين، الأرصدة وسندات الصرف' : 'Suppliers Directory, Balances & Pay Out'),
+                  trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    widget.onNavigationIndexChanged(5);
                   },
                 ),
                 ListTile(
@@ -501,7 +538,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                   trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
                   onTap: () {
                     Navigator.pop(ctx);
-                    widget.onNavigationIndexChanged(5);
+                    widget.onNavigationIndexChanged(6);
                   },
                 ),
                 ListTile(
@@ -532,7 +569,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                   trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
                   onTap: () {
                     Navigator.pop(ctx);
-                    widget.onNavigationIndexChanged(6);
+                    widget.onNavigationIndexChanged(7);
                   },
                 ),
                 ListTile(
@@ -545,7 +582,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                   trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
                   onTap: () {
                     Navigator.pop(ctx);
-                    widget.onNavigationIndexChanged(7);
+                    widget.onNavigationIndexChanged(8);
                   },
                 ),
               ],

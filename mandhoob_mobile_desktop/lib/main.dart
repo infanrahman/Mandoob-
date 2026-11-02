@@ -6,9 +6,10 @@ import 'widgets/access_denied_widget.dart';
 import 'widgets/adaptive_scaffold.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/sales/sales_list_screen.dart';
-import 'screens/purchase/purchase_list_screen.dart';
 import 'screens/inventory/inventory_screen.dart';
 import 'screens/customers/customer_list_screen.dart';
+import 'screens/purchase/purchase_list_screen.dart';
+import 'screens/suppliers/supplier_list_screen.dart';
 import 'screens/expenses/expense_list_screen.dart';
 import 'screens/reports/reports_screen.dart';
 import 'screens/settings/settings_screen.dart';
@@ -64,16 +65,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       case 1:
         return lang.translate('sales');
       case 2:
-        return lang.translate('purchases');
-      case 3:
         return lang.translate('inventory');
-      case 4:
+      case 3:
         return lang.translate('customers');
+      case 4:
+        return lang.translate('purchases');
       case 5:
-        return lang.translate('expenses');
+        return lang.translate('suppliers');
       case 6:
-        return lang.translate('reports');
+        return lang.translate('expenses');
       case 7:
+        return lang.translate('reports');
+      case 8:
         return lang.translate('settings');
       default:
         return 'مندوب - Mandhoob';
@@ -86,25 +89,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       case 0:
         return DashboardScreen(
           onNavigateToSales: () => setState(() => _currentIndex = 1),
-          onNavigateToInventory: () => setState(() => _currentIndex = 3),
-          onNavigateToCustomers: () => setState(() => _currentIndex = 4),
+          onNavigateToInventory: () => setState(() => _currentIndex = 2),
+          onNavigateToCustomers: () => setState(() => _currentIndex = 3),
         );
       case 1:
         return const SalesListScreen();
       case 2:
+        return const InventoryScreen();
+      case 3:
+        return const CustomerListScreen();
+      case 4:
         if (!auth.can((p) => p.canCreatePurchase)) {
           return AccessDeniedWidget(
             requiredPermissionName: 'canCreatePurchase',
-            customMessage: 'لا تمتلك صلاحية إدارة المشتريات والموردين. يتطلب هذا القسم دور المشرف أو المحاسب.',
+            customMessage: 'لا تمتلك صلاحية إدارة وتوريد المشتريات. يتطلب هذا القسم دور المشرف أو المحاسب.',
             onReturnHome: () => setState(() => _currentIndex = 0),
           );
         }
         return const PurchaseListScreen();
-      case 3:
-        return const InventoryScreen();
-      case 4:
-        return const CustomerListScreen();
       case 5:
+        if (!auth.can((p) => p.canManageSuppliers || p.canCreatePurchase)) {
+          return AccessDeniedWidget(
+            requiredPermissionName: 'canManageSuppliers',
+            customMessage: 'لا تمتلك صلاحية إدارة الموردين والذمم الدائنة.',
+            onReturnHome: () => setState(() => _currentIndex = 0),
+          );
+        }
+        return const SupplierListScreen();
+      case 6:
         if (!auth.can((p) => p.canManageExpenses)) {
           return AccessDeniedWidget(
             requiredPermissionName: 'canManageExpenses',
@@ -113,7 +125,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           );
         }
         return const ExpenseListScreen();
-      case 6:
+      case 7:
         if (!auth.can((p) => p.canViewReports)) {
           return AccessDeniedWidget(
             requiredPermissionName: 'canViewReports',
@@ -122,13 +134,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           );
         }
         return const ReportsScreen();
-      case 7:
+      case 8:
         return const SettingsScreen();
       default:
         return DashboardScreen(
           onNavigateToSales: () => setState(() => _currentIndex = 1),
-          onNavigateToInventory: () => setState(() => _currentIndex = 3),
-          onNavigateToCustomers: () => setState(() => _currentIndex = 4),
+          onNavigateToInventory: () => setState(() => _currentIndex = 2),
+          onNavigateToCustomers: () => setState(() => _currentIndex = 3),
         );
     }
   }
