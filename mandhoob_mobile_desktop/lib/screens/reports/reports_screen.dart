@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
 import '../../models/invoice_model.dart';
+import '../../widgets/date_filter_bar.dart';
 import '../customers/customer_detail_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -14,6 +15,9 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  DateFilterPreset _reportDatePreset = DateFilterPreset.thisMonth;
+  DateTimeRange? _reportCustomRange;
+  String _dayBookSearchQuery = '';
 
   @override
   void initState() {
@@ -30,26 +34,34 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
         final lang = AppLanguage();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
-        // Calculate ZATCA Tax Return Numbers
-        final taxableSales = db.invoices
+        // Filter invoices & expenses for the selected reporting period
+        final periodInvoices = db.invoices
+            .where((i) => DateFilterHelper.matches(i.invoiceDate, _reportDatePreset, _reportCustomRange))
+            .toList();
+        final periodExpenses = db.expenses
+            .where((e) => DateFilterHelper.matches(e.date, _reportDatePreset, _reportCustomRange))
+            .toList();
+
+        // Calculate ZATCA Tax Return Numbers for Period
+        final taxableSales = periodInvoices
             .where((i) => i.type != InvoiceType.salesReturn && i.type != InvoiceType.quotation)
             .fold(0.0, (sum, i) => sum + i.subtotal);
-        final salesVat = db.invoices
+        final salesVat = periodInvoices
             .where((i) => i.type != InvoiceType.salesReturn && i.type != InvoiceType.quotation)
             .fold(0.0, (sum, i) => sum + i.totalVat);
 
-        final salesReturns = db.invoices
+        final salesReturns = periodInvoices
             .where((i) => i.type == InvoiceType.salesReturn)
             .fold(0.0, (sum, i) => sum + i.subtotal);
-        final returnsVat = db.invoices
+        final returnsVat = periodInvoices
             .where((i) => i.type == InvoiceType.salesReturn)
             .fold(0.0, (sum, i) => sum + i.totalVat);
 
         final netTaxableSales = taxableSales - salesReturns;
         final netOutputVat = salesVat - returnsVat;
 
-        final expenseAmount = db.expenses.fold(0.0, (sum, e) => sum + e.amount);
-        final inputVat = db.expenses.fold(0.0, (sum, e) => sum + e.vatAmount);
+        final expenseAmount = periodExpenses.fold(0.0, (sum, e) => sum + e.amount);
+        final inputVat = periodExpenses.fold(0.0, (sum, e) => sum + e.vatAmount);
 
         final netVatPayableToZatca = netOutputVat - inputVat;
         final portfolioAging = db.getPortfolioReceivablesAging();
@@ -71,9 +83,23 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
               ],
             ),
           ),
-          body: TabBarView(
-            controller: _tabController,
+          body: Column(
             children: [
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: DateFilterBar(
+                  selectedPreset: _reportDatePreset,
+                  customRange: _reportCustomRange,
+                  onPresetChanged: (preset) => setState(() => _reportDatePreset = preset),
+                  onCustomRangeChanged: (range) => setState(() => _reportCustomRange = range),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
               // Tab 1: Official ZATCA VAT Return
               SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -364,26 +390,75 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                 ),
               ),
 
-              // Tab 3: Day Book
-              ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: db.invoices.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final inv = db.invoices[index];
-                  return Card(
-                    child: ListTile(
-                      leading: Icon(
-                        inv.type == InvoiceType.salesReturn ? Icons.assignment_return : Icons.receipt,
-                        color: inv.type == InvoiceType.salesReturn ? AppColors.expenseRed : AppColors.saleGreen,
+              // Tab 3: Day Book (Filtered by Period & Search)
+              Builder(
+                builder: (context) {
+                  final dayBookInvoices = periodInvoices.where((inv) {
+                    if (_dayBookSearchQuery.isNotEmpty) {
+                      final q = _dayBookSearchQuery.toLowerCase().trim();
+                      return inv.invoiceNumber.toLowerCase().contains(q) ||
+                          inv.customerNameAr.toLowerCase().contains(q) ||
+                          inv.customerNameEn.toLowerCase().contains(q);
+                    }
+                    return true;
+                  }).toList();
+
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: lang.isArabic ? 'ابحث برقم القيد أو اسم العميل...' : 'Search day book...',
+                            hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                            prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.primary),
+                            suffixIcon: _dayBookSearchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 16),
+                                    onPressed: () => setState(() => _dayBookSearchQuery = ''),
+                                  )
+                                : null,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            fillColor: Colors.grey.shade100,
+                            filled: true,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          onChanged: (val) => setState(() => _dayBookSearchQuery = val),
+                        ),
                       ),
-                      title: Text('${inv.invoiceNumber} • ${lang.isArabic ? inv.customerNameAr : inv.customerNameEn}'),
-                      subtitle: Text(inv.invoiceDate.toLocal().toString().substring(0, 16)),
-                      trailing: Text(
-                        '${inv.grandTotal.toStringAsFixed(2)} $curr',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      Expanded(
+                        child: dayBookInvoices.isEmpty
+                            ? Center(
+                                child: Text(
+                                  lang.isArabic ? 'لا توجد قيود مسجلة لهذه الفترة' : 'No entries for this period',
+                                  style: const TextStyle(color: AppColors.textSecondary),
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                itemCount: dayBookInvoices.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                itemBuilder: (context, index) {
+                                  final inv = dayBookInvoices[index];
+                                  return Card(
+                                    child: ListTile(
+                                      leading: Icon(
+                                        inv.type == InvoiceType.salesReturn ? Icons.assignment_return : Icons.receipt,
+                                        color: inv.type == InvoiceType.salesReturn ? AppColors.expenseRed : AppColors.saleGreen,
+                                      ),
+                                      title: Text('${inv.invoiceNumber} • ${lang.isArabic ? inv.customerNameAr : inv.customerNameEn}'),
+                                      subtitle: Text(inv.invoiceDate.toLocal().toString().substring(0, 16)),
+                                      trailing: Text(
+                                        '${inv.grandTotal.toStringAsFixed(2)} $curr',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                       ),
-                    ),
+                    ],
                   );
                 },
               ),
@@ -470,8 +545,11 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
               ),
             ],
           ),
-        );
-      },
+        ),
+      ],
+    ),
+  );
+},
     );
   }
 

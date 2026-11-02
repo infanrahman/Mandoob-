@@ -4,6 +4,7 @@ import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/invoice_model.dart';
+import '../../widgets/date_filter_bar.dart';
 import 'create_invoice_screen.dart';
 import 'invoice_detail_screen.dart';
 
@@ -18,6 +19,8 @@ class _SalesListScreenState extends State<SalesListScreen> {
   String _searchQuery = '';
   InvoiceType? _selectedTypeFilter;
   PaymentStatus? _selectedPaymentFilter;
+  DateFilterPreset _selectedDatePreset = DateFilterPreset.all;
+  DateTimeRange? _customDateRange;
 
   @override
   Widget build(BuildContext context) {
@@ -29,23 +32,39 @@ class _SalesListScreenState extends State<SalesListScreen> {
         final auth = AuthService();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
-        // Filter list
+        // Filter list with Date + Search + Type + Payment filters
         final filteredInvoices = db.invoices.where((inv) {
+          // 1. Date filter
+          if (!DateFilterHelper.matches(inv.invoiceDate, _selectedDatePreset, _customDateRange)) {
+            return false;
+          }
+          // 2. Type filter
           if (_selectedTypeFilter != null && inv.type != _selectedTypeFilter) {
             return false;
           }
+          // 3. Payment status filter
           if (_selectedPaymentFilter != null && inv.paymentStatus != _selectedPaymentFilter) {
             return false;
           }
+          // 4. Advanced search query (invoice #, customer, VAT, salesman, notes)
           if (_searchQuery.isNotEmpty) {
-            final query = _searchQuery.toLowerCase();
+            final query = _searchQuery.toLowerCase().trim();
             final matchesNumber = inv.invoiceNumber.toLowerCase().contains(query);
             final matchesCustomer = inv.customerNameAr.toLowerCase().contains(query) ||
                 inv.customerNameEn.toLowerCase().contains(query);
-            return matchesNumber || matchesCustomer;
+            final matchesVat = inv.customerVatNumber?.contains(query) ?? false;
+            final matchesSalesman = inv.salesmanName.toLowerCase().contains(query);
+            final matchesNotes = inv.notes?.toLowerCase().contains(query) ?? false;
+            return matchesNumber || matchesCustomer || matchesVat || matchesSalesman || matchesNotes;
           }
           return true;
         }).toList();
+
+        final filteredTotal = filteredInvoices.fold(0.0, (sum, i) => sum + (i.type == InvoiceType.salesReturn ? -i.grandTotal : i.grandTotal));
+        final hasActiveFilter = _searchQuery.isNotEmpty ||
+            _selectedTypeFilter != null ||
+            _selectedPaymentFilter != null ||
+            _selectedDatePreset != DateFilterPreset.all;
 
         return Scaffold(
           body: Column(
@@ -133,6 +152,49 @@ class _SalesListScreenState extends State<SalesListScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    // Date Filter Bar
+                    DateFilterBar(
+                      selectedPreset: _selectedDatePreset,
+                      customRange: _customDateRange,
+                      onPresetChanged: (preset) => setState(() => _selectedDatePreset = preset),
+                      onCustomRangeChanged: (range) => setState(() => _customDateRange = range),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Filter Summary / Reset Bar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                color: Colors.grey.shade50,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${lang.isArabic ? "النتائج" : "Results"}: ${filteredInvoices.length} (${filteredTotal.toStringAsFixed(2)} $curr)',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                    ),
+                    if (hasActiveFilter)
+                      InkWell(
+                        onTap: () => setState(() {
+                          _searchQuery = '';
+                          _selectedTypeFilter = null;
+                          _selectedPaymentFilter = null;
+                          _selectedDatePreset = DateFilterPreset.all;
+                          _customDateRange = null;
+                        }),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.refresh, size: 13, color: AppColors.expenseRed),
+                            const SizedBox(width: 3),
+                            Text(
+                              lang.isArabic ? 'إعادة ضبط' : 'Reset Filters',
+                              style: const TextStyle(fontSize: 11, color: AppColors.expenseRed, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),

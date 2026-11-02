@@ -7,6 +7,7 @@ import '../../models/supplier_model.dart';
 import '../../models/product_model.dart';
 import '../../models/stock_transfer_model.dart';
 import '../../models/expense_model.dart';
+import '../../widgets/date_filter_bar.dart';
 import '../suppliers/supplier_detail_screen.dart';
 import '../suppliers/payment_out_dialog.dart';
 
@@ -20,6 +21,9 @@ class PurchaseListScreen extends StatefulWidget {
 class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _searchQuery = '';
+  String _billSearchQuery = '';
+  DateFilterPreset _billDatePreset = DateFilterPreset.all;
+  DateTimeRange? _billCustomRange;
 
   @override
   void initState() {
@@ -36,7 +40,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([DatabaseService(), AppLanguage()]),
+      listenable: Listenable.merge([DatabaseService(), AppLanguage(), AuthService()]),
       builder: (context, _) {
         final db = DatabaseService();
         final auth = AuthService();
@@ -46,18 +50,31 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
         // Filter suppliers
         final filteredSuppliers = db.suppliers.where((s) {
           if (_searchQuery.isNotEmpty) {
-            final q = _searchQuery.toLowerCase();
+            final q = _searchQuery.toLowerCase().trim();
             return s.nameAr.toLowerCase().contains(q) ||
                 s.nameEn.toLowerCase().contains(q) ||
                 s.phone.contains(q) ||
-                (s.vatNumber?.contains(q) ?? false);
+                (s.vatNumber?.contains(q) ?? false) ||
+                (s.crNumber?.contains(q) ?? false) ||
+                (s.city?.toLowerCase().contains(q) ?? false);
           }
           return true;
         }).toList();
 
-        // Inward Purchase Bills from expenses / ledger
+        // Inward Purchase Bills from expenses / ledger with Date + Search filtering
         final purchaseBills = db.expenses
             .where((e) => e.expenseNumber.startsWith('PUR'))
+            .where((e) => DateFilterHelper.matches(e.date, _billDatePreset, _billCustomRange))
+            .where((e) {
+              if (_billSearchQuery.isNotEmpty) {
+                final q = _billSearchQuery.toLowerCase().trim();
+                return e.expenseNumber.toLowerCase().contains(q) ||
+                    e.description.toLowerCase().contains(q) ||
+                    e.spentByUserName.toLowerCase().contains(q) ||
+                    e.paymentMode.toLowerCase().contains(q);
+              }
+              return true;
+            })
             .toList();
 
         final totalPurchaseAmount = purchaseBills.fold(0.0, (sum, b) => sum + b.totalWithVat);
@@ -288,7 +305,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
               Column(
                 children: [
                   Container(
-                    margin: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.green.shade50,
@@ -299,7 +316,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          lang.isArabic ? 'إجمالي المشتريات الواردة:' : 'Total Inward Purchases:',
+                          '${lang.isArabic ? "إجمالي فواتير الشراء المعروضة" : "Displayed Purchases"}: (${purchaseBills.length})',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                         Text(
@@ -309,6 +326,44 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> with SingleTick
                       ],
                     ),
                   ),
+
+                  // Search & Date Filter Bar for Purchase Bills
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Column(
+                      children: [
+                        TextField(
+                          decoration: InputDecoration(
+                            hintText: lang.isArabic
+                                ? 'ابحث برقم فاتورة الشراء أو البيان أو طريقة السداد...'
+                                : 'Search bill #, description, or payment...',
+                            hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                            prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 20),
+                            suffixIcon: _billSearchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 16),
+                                    onPressed: () => setState(() => _billSearchQuery = ''),
+                                  )
+                                : null,
+                            fillColor: Colors.grey.shade100,
+                            filled: true,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          onChanged: (val) => setState(() => _billSearchQuery = val),
+                        ),
+                        const SizedBox(height: 6),
+                        DateFilterBar(
+                          selectedPreset: _billDatePreset,
+                          customRange: _billCustomRange,
+                          onPresetChanged: (preset) => setState(() => _billDatePreset = preset),
+                          onCustomRangeChanged: (range) => setState(() => _billCustomRange = range),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
 
                   Expanded(
                     child: purchaseBills.isEmpty

@@ -14,8 +14,16 @@ class CustomerListScreen extends StatefulWidget {
   State<CustomerListScreen> createState() => _CustomerListScreenState();
 }
 
+enum CustomerFilterType {
+  all,
+  hasBalance,
+  overLimit,
+}
+
 class _CustomerListScreenState extends State<CustomerListScreen> {
   String _searchQuery = '';
+  CustomerFilterType _selectedStatusFilter = CustomerFilterType.all;
+  String? _selectedAreaFilter;
 
   @override
   Widget build(BuildContext context) {
@@ -26,57 +34,153 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         final lang = AppLanguage();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
+        // Extract unique areas
+        final areas = db.customers
+            .map((c) => c.routeArea ?? c.district ?? '')
+            .where((a) => a.isNotEmpty)
+            .toSet()
+            .toList();
+
         final filteredCustomers = db.customers.where((c) {
+          // 1. Status Filter
+          if (_selectedStatusFilter == CustomerFilterType.hasBalance && c.currentBalance <= 0) {
+            return false;
+          }
+          if (_selectedStatusFilter == CustomerFilterType.overLimit && c.currentBalance <= c.creditLimit) {
+            return false;
+          }
+          // 2. Area Filter
+          if (_selectedAreaFilter != null) {
+            final a = c.routeArea ?? c.district ?? '';
+            if (a != _selectedAreaFilter) return false;
+          }
+          // 3. Search query
           if (_searchQuery.isNotEmpty) {
-            final q = _searchQuery.toLowerCase();
-            return c.nameAr.toLowerCase().contains(q) ||
-                c.nameEn.toLowerCase().contains(q) ||
-                c.phone.contains(q) ||
-                (c.vatNumber?.contains(q) ?? false);
+            final q = _searchQuery.toLowerCase().trim();
+            final matchesName = c.nameAr.toLowerCase().contains(q) || c.nameEn.toLowerCase().contains(q);
+            final matchesPhone = c.phone.contains(q);
+            final matchesVat = c.vatNumber?.contains(q) ?? false;
+            final matchesCr = c.crNumber?.contains(q) ?? false;
+            final matchesArea = (c.routeArea?.toLowerCase().contains(q) ?? false) ||
+                (c.district?.toLowerCase().contains(q) ?? false) ||
+                (c.city?.toLowerCase().contains(q) ?? false);
+            return matchesName || matchesPhone || matchesVat || matchesCr || matchesArea;
           }
           return true;
         }).toList();
 
+        final hasFilter = _searchQuery.isNotEmpty ||
+            _selectedStatusFilter != CustomerFilterType.all ||
+            _selectedAreaFilter != null;
+
         return Scaffold(
           body: Column(
             children: [
-              // Search Bar
+              // Search & Filter Bar
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 color: Colors.white,
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: lang.isArabic
-                        ? 'ابحث باسم العميل أو الجوال أو الرقم الضريبي...'
-                        : 'Search customer, phone or VAT #...',
-                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                    prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 22),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    isDense: true,
-                    fillColor: Colors.grey.shade100,
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
+                child: Column(
+                  children: [
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: lang.isArabic
+                            ? 'ابحث باسم العميل أو الجوال أو الرقم الضريبي أو الحي...'
+                            : 'Search customer, phone, VAT #, or area...',
+                        hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                        prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 22),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        isDense: true,
+                        fillColor: Colors.grey.shade100,
+                        filled: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () => setState(() => _searchQuery = ''),
+                              )
+                            : null,
+                      ),
+                      onChanged: (val) => setState(() => _searchQuery = val),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
+                    const SizedBox(height: 8),
+                    // Quick Status Filter Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildFilterChip(
+                            label: lang.isArabic ? 'كافة العملاء' : 'All Customers',
+                            count: db.customers.length,
+                            isSelected: _selectedStatusFilter == CustomerFilterType.all && _selectedAreaFilter == null,
+                            onTap: () => setState(() {
+                              _selectedStatusFilter = CustomerFilterType.all;
+                              _selectedAreaFilter = null;
+                            }),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildFilterChip(
+                            label: lang.isArabic ? 'عليهم مديونية' : 'Has Balance',
+                            count: db.customers.where((c) => c.currentBalance > 0).length,
+                            isSelected: _selectedStatusFilter == CustomerFilterType.hasBalance,
+                            onTap: () => setState(() => _selectedStatusFilter = _selectedStatusFilter == CustomerFilterType.hasBalance ? CustomerFilterType.all : CustomerFilterType.hasBalance),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildFilterChip(
+                            label: lang.isArabic ? 'تجاوز الائتمان' : 'Over Limit',
+                            count: db.customers.where((c) => c.currentBalance > c.creditLimit).length,
+                            isSelected: _selectedStatusFilter == CustomerFilterType.overLimit,
+                            color: Colors.red,
+                            onTap: () => setState(() => _selectedStatusFilter = _selectedStatusFilter == CustomerFilterType.overLimit ? CustomerFilterType.all : CustomerFilterType.overLimit),
+                          ),
+                          if (areas.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            ...areas.map((area) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: _buildFilterChip(
+                                  label: area,
+                                  isSelected: _selectedAreaFilter == area,
+                                  color: Colors.teal,
+                                  onTap: () => setState(() => _selectedAreaFilter = _selectedAreaFilter == area ? null : area),
+                                ),
+                              );
+                            }),
+                          ],
+                        ],
+                      ),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-                    ),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () => setState(() => _searchQuery = ''),
-                          )
-                        : null,
-                  ),
-                  onChanged: (val) => setState(() => _searchQuery = val),
+                  ],
                 ),
               ),
+
+              if (hasFilter)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  color: Colors.grey.shade100,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${lang.isArabic ? "نتائج البحث" : "Results"}: ${filteredCustomers.length}',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                      ),
+                      InkWell(
+                        onTap: () => setState(() {
+                          _searchQuery = '';
+                          _selectedStatusFilter = CustomerFilterType.all;
+                          _selectedAreaFilter = null;
+                        }),
+                        child: Text(
+                          lang.isArabic ? 'إلغاء التصفية' : 'Clear Filters',
+                          style: const TextStyle(fontSize: 11, color: AppColors.expenseRed, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               const Divider(height: 1, thickness: 1, color: AppColors.cardBorder),
 
@@ -584,6 +688,62 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
             child: Text(lang.isArabic ? 'حذف' : 'Delete'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    int? count,
+    required bool isSelected,
+    Color? color,
+    required VoidCallback onTap,
+  }) {
+    final activeColor = color ?? AppColors.primary;
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? activeColor : Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+            if (count != null) ...[
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white.withOpacity(0.25) : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

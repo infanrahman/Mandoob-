@@ -8,6 +8,7 @@ import '../../models/warehouse_model.dart';
 import '../../models/stock_transfer_model.dart';
 import '../../models/stock_adjustment_model.dart';
 import '../../models/user_model.dart';
+import '../../widgets/date_filter_bar.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -20,6 +21,14 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
   late TabController _tabController;
   String _searchQuery = '';
   String _selectedCategory = 'ALL';
+
+  String _transferSearchQuery = '';
+  DateFilterPreset _transferDatePreset = DateFilterPreset.all;
+  DateTimeRange? _transferCustomRange;
+
+  String _adjSearchQuery = '';
+  DateFilterPreset _adjDatePreset = DateFilterPreset.all;
+  DateTimeRange? _adjCustomRange;
 
   @override
   void initState() {
@@ -789,105 +798,155 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
   // Tab 3: Stock Transfers Log
   // ---------------------------------------------------------------------------
   Widget _buildTransfersLogTab(DatabaseService db, AppLanguage lang, String curr) {
-    if (db.stockTransfers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.swap_horiz, size: 48, color: AppColors.textMuted),
-            const SizedBox(height: 10),
-            Text(
-              lang.isArabic ? 'لا توجد حركات نقل مخزني مسجلة' : 'No stock transfers logged yet',
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
+    final filteredTransfers = db.stockTransfers.where((trf) {
+      if (!DateFilterHelper.matches(trf.date, _transferDatePreset, _transferCustomRange)) {
+        return false;
+      }
+      if (_transferSearchQuery.isNotEmpty) {
+        final q = _transferSearchQuery.toLowerCase().trim();
+        final matchNum = trf.transferNumber.toLowerCase().contains(q);
+        final matchFrom = trf.fromWarehouseName.toLowerCase().contains(q);
+        final matchTo = trf.toVanName.toLowerCase().contains(q);
+        final matchUser = trf.requestedByUserName.toLowerCase().contains(q);
+        final matchItems = trf.items.any((it) => it.productName.toLowerCase().contains(q));
+        return matchNum || matchFrom || matchTo || matchUser || matchItems;
+      }
+      return true;
+    }).toList();
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(14),
-      itemCount: db.stockTransfers.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final trf = db.stockTransfers[index];
-        final totalItemsCount = trf.items.fold<double>(0.0, (s, it) => s + it.quantity);
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.teal.shade50,
-                      child: const Icon(Icons.sync_alt, color: Colors.teal, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${trf.fromWarehouseName} ➔ ${trf.toVanName}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            '${trf.transferNumber} • ${trf.date.toLocal().toString().substring(0, 16)}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        lang.isArabic ? 'تم النقل' : 'Completed',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green.shade800),
-                      ),
-                    ),
-                  ],
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+          child: Column(
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  hintText: lang.isArabic
+                      ? 'ابحث برقم النقل أو المستودع أو الصنف...'
+                      : 'Search transfer #, warehouse, item...',
+                  hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  prefixIcon: const Icon(Icons.search, size: 20, color: Colors.teal),
+                  suffixIcon: _transferSearchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 16),
+                          onPressed: () => setState(() => _transferSearchQuery = ''),
+                        )
+                      : null,
+                  fillColor: Colors.grey.shade100,
+                  filled: true,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
-                const Divider(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: trf.items.map((it) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Text(
-                        '${it.productName}: ${it.quantity.toInt()} ${it.unit}',
-                        style: const TextStyle(fontSize: 11),
+                onChanged: (val) => setState(() => _transferSearchQuery = val),
+              ),
+              const SizedBox(height: 6),
+              DateFilterBar(
+                selectedPreset: _transferDatePreset,
+                customRange: _transferCustomRange,
+                onPresetChanged: (preset) => setState(() => _transferDatePreset = preset),
+                onCustomRangeChanged: (range) => setState(() => _transferCustomRange = range),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: filteredTransfers.isEmpty
+              ? Center(
+                  child: Text(
+                    lang.isArabic ? 'لا توجد حركات نقل مطابقة للبحث والتاريخ' : 'No stock transfers match search',
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(14),
+                  itemCount: filteredTransfers.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final trf = filteredTransfers[index];
+                    final totalItemsCount = trf.items.fold<double>(0.0, (s, it) => s + it.quantity);
+
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.teal.shade50,
+                                  child: const Icon(Icons.sync_alt, color: Colors.teal, size: 18),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${trf.fromWarehouseName} ➔ ${trf.toVanName}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        '${trf.transferNumber} • ${trf.date.toLocal().toString().substring(0, 16)}',
+                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    lang.isArabic ? 'تم النقل' : 'Completed',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 16),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: trf.items.map((it) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.background,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: AppColors.cardBorder),
+                                  ),
+                                  child: Text(
+                                    '${it.productName}: ${it.quantity.toInt()} ${it.unit}',
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            if (trf.notes != null && trf.notes!.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                '${lang.isArabic ? "ملاحظات" : "Notes"}: ${trf.notes} • ${lang.isArabic ? "المسؤول" : "By"}: ${trf.requestedByUserName}',
+                                style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     );
-                  }).toList(),
+                  },
                 ),
-                if (trf.notes != null && trf.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    '${lang.isArabic ? "ملاحظات" : "Notes"}: ${trf.notes} • ${lang.isArabic ? "المسؤول" : "By"}: ${trf.requestedByUserName}',
-                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -895,117 +954,166 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
   // Tab 4: Physical Stock Adjustments Audit Log
   // ---------------------------------------------------------------------------
   Widget _buildAdjustmentsLogTab(DatabaseService db, AppLanguage lang) {
-    if (db.stockAdjustments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.fact_check_outlined, size: 48, color: AppColors.textMuted),
-            const SizedBox(height: 10),
-            Text(
-              lang.isArabic ? 'لا توجد تسويات جردية مسجلة' : 'No stock adjustments logged yet',
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
+    final filteredAdjustments = db.stockAdjustments.where((adj) {
+      if (!DateFilterHelper.matches(adj.date, _adjDatePreset, _adjCustomRange)) {
+        return false;
+      }
+      if (_adjSearchQuery.isNotEmpty) {
+        final q = _adjSearchQuery.toLowerCase().trim();
+        final matchNum = adj.adjustmentNumber.toLowerCase().contains(q);
+        final matchProd = adj.productNameAr.toLowerCase().contains(q) || adj.productNameEn.toLowerCase().contains(q);
+        final matchWh = adj.warehouseName.toLowerCase().contains(q);
+        final matchUser = adj.adjustedByUserName.toLowerCase().contains(q);
+        return matchNum || matchProd || matchWh || matchUser;
+      }
+      return true;
+    }).toList();
+
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+          child: Column(
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  hintText: lang.isArabic
+                      ? 'ابحث برقم التسوية أو اسم الصنف أو المستودع...'
+                      : 'Search adjustment #, product, warehouse...',
+                  hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  prefixIcon: const Icon(Icons.search, size: 20, color: Colors.orange),
+                  suffixIcon: _adjSearchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 16),
+                          onPressed: () => setState(() => _adjSearchQuery = ''),
+                        )
+                      : null,
+                  fillColor: Colors.grey.shade100,
+                  filled: true,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+                onChanged: (val) => setState(() => _adjSearchQuery = val),
+              ),
+              const SizedBox(height: 6),
+              DateFilterBar(
+                selectedPreset: _adjDatePreset,
+                customRange: _adjCustomRange,
+                onPresetChanged: (preset) => setState(() => _adjDatePreset = preset),
+                onCustomRangeChanged: (range) => setState(() => _adjCustomRange = range),
+              ),
+            ],
+          ),
         ),
-      );
-    }
+        const Divider(height: 1),
+        Expanded(
+          child: filteredAdjustments.isEmpty
+              ? Center(
+                  child: Text(
+                    lang.isArabic ? 'لا توجد تسويات جردية مطابقة' : 'No adjustments match search',
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(14),
+                  itemCount: filteredAdjustments.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final adj = filteredAdjustments[index];
+                    final isNegative = adj.differenceQuantity < 0;
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(14),
-      itemCount: db.stockAdjustments.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final adj = db.stockAdjustments[index];
-        final isNegative = adj.differenceQuantity < 0;
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: isNegative ? Colors.red.shade50 : Colors.green.shade50,
-                      child: Icon(
-                        isNegative ? Icons.remove : Icons.add,
-                        color: isNegative ? AppColors.expenseRed : AppColors.saleGreen,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            lang.isArabic ? adj.productNameAr : adj.productNameEn,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            '${adj.adjustmentNumber} • ${adj.warehouseName}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: isNegative ? Colors.red.shade50 : Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${isNegative ? "" : "+"}${adj.differenceQuantity.toInt()}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isNegative ? AppColors.expenseRed : Colors.green.shade900,
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: isNegative ? Colors.red.shade50 : Colors.green.shade50,
+                                  child: Icon(
+                                    isNegative ? Icons.remove : Icons.add,
+                                    color: isNegative ? AppColors.expenseRed : AppColors.saleGreen,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        lang.isArabic ? adj.productNameAr : adj.productNameEn,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        '${adj.adjustmentNumber} • ${adj.warehouseName}',
+                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: isNegative ? Colors.red.shade50 : Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '${isNegative ? "" : "+"}${adj.differenceQuantity.toInt()}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: isNegative ? AppColors.expenseRed : Colors.green.shade900,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 14),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${lang.isArabic ? "الرصيد السابق" : "Prev"}: ${adj.previousQuantity.toInt()} ➔ ${lang.isArabic ? "الفعلي الجديد" : "New"}: ${adj.newQuantity.toInt()}',
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.background,
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: AppColors.cardBorder),
+                                  ),
+                                  child: Text(
+                                    adj.reasonDisplayName(lang.isArabic),
+                                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (adj.notes != null && adj.notes!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '${lang.isArabic ? "ملاحظات" : "Note"}: ${adj.notes} • ${adj.adjustedByUserName}',
+                                style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-                const Divider(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${lang.isArabic ? "الرصيد السابق" : "Prev"}: ${adj.previousQuantity.toInt()} ➔ ${lang.isArabic ? "الفعلي الجديد" : "New"}: ${adj.newQuantity.toInt()}',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Text(
-                        adj.reasonDisplayName(lang.isArabic),
-                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
-                if (adj.notes != null && adj.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${lang.isArabic ? "ملاحظات" : "Note"}: ${adj.notes} • ${adj.adjustedByUserName}',
-                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
+        ),
+      ],
     );
   }
 
