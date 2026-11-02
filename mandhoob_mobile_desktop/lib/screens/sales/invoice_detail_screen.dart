@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../models/invoice_model.dart';
+import '../../models/user_model.dart';
 import '../../services/printer_service.dart';
 import '../../services/database_service.dart';
+import '../../services/auth_service.dart';
 import '../../core/zatca/ubl_xml_generator.dart';
 import '../../core/zatca/zatca_crypto_service.dart';
 
@@ -15,9 +17,11 @@ class InvoiceDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: AppLanguage(),
+      listenable: Listenable.merge([AppLanguage(), AuthService()]),
       builder: (context, _) {
         final db = DatabaseService();
+        final auth = AuthService();
+        final isZatcaAdmin = auth.hasRole([UserRole.admin, UserRole.superAdmin]);
         final lang = AppLanguage();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
@@ -43,11 +47,12 @@ class InvoiceDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(invoice.invoiceNumber),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.code),
-            tooltip: 'فحص ملف UBL 2.1 XML المعتمد (ZATCA Phase 2)',
-            onPressed: () => _showUblXmlModal(context, ublXml),
-          ),
+          if (isZatcaAdmin)
+            IconButton(
+              icon: const Icon(Icons.code),
+              tooltip: 'فحص ملف UBL 2.1 XML المعتمد (ZATCA Phase 2)',
+              onPressed: () => _showUblXmlModal(context, ublXml),
+            ),
           IconButton(
             icon: const Icon(Icons.print),
             tooltip: 'طباعة حرارية / Thermal Print',
@@ -432,40 +437,41 @@ class InvoiceDetailScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // ZATCA Phase 2 Cryptographic Audit Block
-            Card(
-              child: ExpansionTile(
-                leading: const Icon(Icons.security, color: Colors.green),
-                title: Text(
-                  lang.isArabic ? 'التفاصيل المشفرة لهيئة الزكاة' : 'ZATCA Phase 2 Cryptographic Proof',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                ),
-                subtitle: const Text('SHA-256 XML Hash, ECDSA Signature, Chain of Trust', style: TextStyle(fontSize: 11)),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildCryptoDetailRow('هاش الفاتورة (Tag 6 - Invoice XML Hash):', invoice.invoiceXmlHash),
-                        const SizedBox(height: 8),
-                        _buildCryptoDetailRow('الختم الرقمي (Tag 7 - ECDSA Digital Signature):', invoice.cryptographicStamp),
-                        const SizedBox(height: 8),
-                        _buildCryptoDetailRow('هاش الفاتورة السابقة (Chain of Trust - PIH):', invoice.previousInvoiceHash),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: () => _showUblXmlModal(context, ublXml),
-                          icon: const Icon(Icons.description, size: 16),
-                          label: Text(lang.isArabic ? 'عرض ملف الفاتورة بتنسيق UBL 2.1 XML' : 'View UBL 2.1 XML File'),
-                        ),
-                      ],
-                    ),
+            if (isZatcaAdmin) ...[
+              // ZATCA Phase 2 Cryptographic Audit Block (Admin & Super Admin only)
+              Card(
+                child: ExpansionTile(
+                  leading: const Icon(Icons.security, color: Colors.green),
+                  title: Text(
+                    lang.isArabic ? 'التفاصيل المشفرة لهيئة الزكاة' : 'ZATCA Phase 2 Cryptographic Proof',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
-                ],
+                  subtitle: const Text('SHA-256 XML Hash, ECDSA Signature, Chain of Trust', style: TextStyle(fontSize: 11)),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildCryptoDetailRow('هاش الفاتورة (Tag 6 - Invoice XML Hash):', invoice.invoiceXmlHash),
+                          const SizedBox(height: 8),
+                          _buildCryptoDetailRow('الختم الرقمي (Tag 7 - ECDSA Digital Signature):', invoice.cryptographicStamp),
+                          const SizedBox(height: 8),
+                          _buildCryptoDetailRow('هاش الفاتورة السابقة (Chain of Trust - PIH):', invoice.previousInvoiceHash),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () => _showUblXmlModal(context, ublXml),
+                            icon: const Icon(Icons.description, size: 16),
+                            label: Text(lang.isArabic ? 'عرض ملف الفاتورة بتنسيق UBL 2.1 XML' : 'View UBL 2.1 XML File'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
 
             // Print Thermal Receipt Action Card
             Card(

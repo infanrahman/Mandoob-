@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/database_service.dart';
+import '../../services/auth_service.dart';
+import '../../models/user_model.dart';
+import '../../widgets/access_denied_widget.dart';
 
 class CompanyProfileScreen extends StatefulWidget {
   const CompanyProfileScreen({super.key});
@@ -65,6 +68,17 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = AuthService();
+    if (!auth.hasRole([UserRole.admin, UserRole.superAdmin])) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('الملف التعريفي للمنشأة')),
+        body: const AccessDeniedWidget(
+          requiredPermissionName: 'canConfigureZatca',
+          customMessage: 'تعديل الملف الضريبي والربط مع هيئة الزكاة ZATCA متاح للمدراء فقط (Admin & Super Admin).',
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('الملف التعريفي للمنشأة / Company Profile'),

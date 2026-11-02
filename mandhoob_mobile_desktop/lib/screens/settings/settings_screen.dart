@@ -173,101 +173,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               const SizedBox(height: 12),
 
-              // 2. ZATCA Link & Integration
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.verified, color: Colors.green),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              lang.isArabic
-                                  ? 'ربط الفاتورة الإلكترونية (ZATCA)'
-                                  : 'ZATCA Phase 2 E-Invoicing',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                              overflow: TextOverflow.ellipsis,
+              // 2. ZATCA Link & Integration (Visible ONLY to Admin & SuperAdmin)
+              if (auth.hasRole([UserRole.admin, UserRole.superAdmin])) ...[
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.verified, color: Colors.green),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                lang.isArabic
+                                    ? 'ربط الفاتورة الإلكترونية (ZATCA)'
+                                    : 'ZATCA Phase 2 E-Invoicing',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(6),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                lang.isArabic ? 'مرتبط (CSID)' : 'Connected (CSID)',
+                                style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
                             ),
-                            child: Text(
-                              lang.isArabic ? 'مرتبط (CSID)' : 'Connected (CSID)',
-                              style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                          ],
+                        ),
+                        const Divider(height: 18),
+                        Text(
+                          lang.isArabic
+                              ? 'حالة المرحلة الثانية: التشفير، الختم الرقمي (ECDSA Cryptographic Stamp)، هاش الفاتورة SHA-256، وتوليد ملفات UBL 2.1 XML مفعلة بالكامل.'
+                              : 'Phase 2 Status: Cryptographic hashing (SHA-256 Tag 6), ECDSA Stamp (Tag 7), X.509 Certificate (Tag 8), and UBL 2.1 XML fully enabled.',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            Text(
+                              lang.isArabic ? 'بيئة الربط (Environment):' : 'Integration Environment:',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                             ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 18),
-                      Text(
-                        lang.isArabic
-                            ? 'حالة المرحلة الثانية: التشفير، الختم الرقمي (ECDSA Cryptographic Stamp)، هاش الفاتورة SHA-256، وتوليد ملفات UBL 2.1 XML مفعلة بالكامل.'
-                            : 'Phase 2 Status: Cryptographic hashing (SHA-256 Tag 6), ECDSA Stamp (Tag 7), X.509 Certificate (Tag 8), and UBL 2.1 XML fully enabled.',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          Text(
-                            lang.isArabic ? 'بيئة الربط (Environment):' : 'Integration Environment:',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                          Chip(
-                            label: Text(
-                              lang.isArabic ? 'Simulation Platform (محاكاة)' : 'Simulation Platform',
-                              style: const TextStyle(fontSize: 11),
+                            Chip(
+                              label: Text(
+                                lang.isArabic ? 'Simulation Platform (محاكاة)' : 'Simulation Platform',
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              backgroundColor: Colors.blue.shade50,
                             ),
-                            backgroundColor: Colors.blue.shade50,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (auth.can((p) => p.canConfigureZatca))
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
                             OutlinedButton.icon(
                               onPressed: () => _showZatcaOnboardDialog(context),
                               icon: const Icon(Icons.vpn_key, size: 16),
                               label: Text(lang.isArabic ? 'تجديد شهادة CSID / رمز OTP' : 'Renew CSID / OTP'),
                             ),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    lang.isArabic
-                                        ? 'تم اختبار الاتصال ببوابة فاتورة (ZATCA Fatoora API): متصل وجاهز!'
-                                        : 'ZATCA Fatoora API connection test: Connected and healthy!',
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      lang.isArabic
+                                          ? 'تم اختبار الاتصال ببوابة فاتورة (ZATCA Fatoora API): متصل وجاهز!'
+                                          : 'ZATCA Fatoora API connection test: Connected and healthy!',
+                                    ),
+                                    backgroundColor: AppColors.saleGreen,
                                   ),
-                                  backgroundColor: AppColors.saleGreen,
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.network_check, size: 16),
-                            label: Text(lang.isArabic ? 'فحص الاتصال بالبوابة' : 'Test API Health'),
-                          ),
-                        ],
-                      ),
-                    ],
+                                );
+                              },
+                              icon: const Icon(Icons.network_check, size: 16),
+                              label: Text(lang.isArabic ? 'فحص الاتصال بالبوابة' : 'Test API Health'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
 
               // 3. Thermal Printer Setup (Bluetooth / Wi-Fi)
               Card(

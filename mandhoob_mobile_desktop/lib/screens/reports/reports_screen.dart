@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
+import '../../services/auth_service.dart';
 import '../../models/invoice_model.dart';
+import '../../models/user_model.dart';
 import '../../widgets/date_filter_bar.dart';
+import '../../widgets/access_denied_widget.dart';
 import '../customers/customer_detail_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -28,10 +31,12 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([DatabaseService(), AppLanguage()]),
+      listenable: Listenable.merge([DatabaseService(), AppLanguage(), AuthService()]),
       builder: (context, _) {
         final db = DatabaseService();
         final lang = AppLanguage();
+        final auth = AuthService();
+        final isZatcaAdmin = auth.hasRole([UserRole.admin, UserRole.superAdmin]);
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
         // Filter invoices & expenses for the selected reporting period
@@ -100,12 +105,19 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-              // Tab 1: Official ZATCA VAT Return
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              // Tab 1: Official ZATCA VAT Return (Restricted to Admin & SuperAdmin only)
+              !isZatcaAdmin
+                  ? AccessDeniedWidget(
+                      requiredPermissionName: 'canConfigureZatca',
+                      customMessage: lang.isArabic
+                          ? 'نموذج الإقرار الضريبي لهيئة الزكاة والضريبة والجمارك (ZATCA) متاح لمدراء النظام فقط (Admin & Super Admin).'
+                          : 'Official ZATCA VAT Return declaration is restricted to Administrators only.',
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
