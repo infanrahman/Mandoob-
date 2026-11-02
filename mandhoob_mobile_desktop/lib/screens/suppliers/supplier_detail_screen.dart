@@ -337,25 +337,41 @@ class SupplierDetailScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      useRootNavigator: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (modalCtx, setModalState) {
             final qty = double.tryParse(qtyController.text) ?? 0.0;
             final cost = double.tryParse(unitCostController.text) ?? 0.0;
             final subtotal = qty * cost;
             final vat = subtotal * 0.15;
             final total = subtotal + vat;
+            final mediaQuery = MediaQuery.of(modalCtx);
+            final keyboard = mediaQuery.viewInsets.bottom;
+            final systemBottom = mediaQuery.viewPadding.bottom;
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
+            return SafeArea(
+              top: false,
+              bottom: true,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: EdgeInsets.only(
+                  left: 18,
+                  right: 18,
+                  top: 14,
+                  bottom: keyboard > 0 ? keyboard + 16 : (systemBottom > 0 ? systemBottom + 12 : 28),
+                ),
+                constraints: BoxConstraints(
+                  maxHeight: mediaQuery.size.height * 0.9,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -499,10 +515,11 @@ class SupplierDetailScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 }

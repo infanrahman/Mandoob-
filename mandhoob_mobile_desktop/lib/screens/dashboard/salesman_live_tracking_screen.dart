@@ -843,25 +843,34 @@ class _SalesmanLiveTrackingScreenState extends State<SalesmanLiveTrackingScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: EdgeInsets.only(
-            left: 18,
-            right: 18,
-            top: 14,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(ctx).size.height * 0.9,
-          ),
-          child: Form(
-            key: formKey,
-            child: SingleChildScrollView(
+        final mediaQuery = MediaQuery.of(ctx);
+        final keyboard = mediaQuery.viewInsets.bottom;
+        final systemBottom = mediaQuery.viewPadding.bottom;
+
+        return SafeArea(
+          top: false,
+          bottom: true,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.only(
+              left: 18,
+              right: 18,
+              top: 14,
+              bottom: keyboard > 0 ? keyboard + 16 : (systemBottom > 0 ? systemBottom + 12 : 28),
+            ),
+            constraints: BoxConstraints(
+              maxHeight: mediaQuery.size.height * 0.9,
+            ),
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1042,10 +1051,11 @@ class _SalesmanLiveTrackingScreenState extends State<SalesmanLiveTrackingScreen>
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   // ---------------------------------------------------------------------------
   // Load Van Stock Modal
@@ -1057,27 +1067,35 @@ class _SalesmanLiveTrackingScreenState extends State<SalesmanLiveTrackingScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (modalCtx, setModalState) {
             final mainWhStock = selectedProd.stockByWarehouse['WH-MAIN'] ?? 0.0;
+            final mediaQuery = MediaQuery.of(modalCtx);
+            final keyboard = mediaQuery.viewInsets.bottom;
+            final systemBottom = mediaQuery.viewPadding.bottom;
 
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              padding: EdgeInsets.only(
-                left: 18,
-                right: 18,
-                top: 14,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-              ),
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(ctx).size.height * 0.9,
-              ),
-              child: SingleChildScrollView(
+            return SafeArea(
+              top: false,
+              bottom: true,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: EdgeInsets.only(
+                  left: 18,
+                  right: 18,
+                  top: 14,
+                  bottom: keyboard > 0 ? keyboard + 16 : (systemBottom > 0 ? systemBottom + 12 : 28),
+                ),
+                constraints: BoxConstraints(
+                  maxHeight: mediaQuery.size.height * 0.9,
+                ),
+                child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1166,11 +1184,12 @@ class _SalesmanLiveTrackingScreenState extends State<SalesmanLiveTrackingScreen>
                 ],
               ),
             ),
-          );
-        },
-      );
-    },
-  );
+          ),
+        );
+      },
+    );
+  },
+);
 }
 
   // Helper metric widgets

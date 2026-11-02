@@ -304,25 +304,34 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              padding: EdgeInsets.only(
-                left: 18,
-                right: 18,
-                top: 14,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-              ),
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.88,
-              ),
-              child: SingleChildScrollView(
+          builder: (modalCtx, setModalState) {
+            final mediaQuery = MediaQuery.of(modalCtx);
+            final keyboard = mediaQuery.viewInsets.bottom;
+            final systemBottom = mediaQuery.viewPadding.bottom;
+
+            return SafeArea(
+              top: false,
+              bottom: true,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: EdgeInsets.only(
+                  left: 18,
+                  right: 18,
+                  top: 14,
+                  bottom: keyboard > 0 ? keyboard + 16 : (systemBottom > 0 ? systemBottom + 12 : 28),
+                ),
+                constraints: BoxConstraints(
+                  maxHeight: mediaQuery.size.height * 0.9,
+                ),
+                child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -416,10 +425,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 ],
               ),
             ),
-          );
-        },
-      );
-    },
-  );
+          ),
+        );
+      },
+    );
+  },
+);
 }
 }
