@@ -408,6 +408,11 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 
   void _showMoreMenu(BuildContext context) {
     final lang = AppLanguage();
+    final auth = AuthService();
+    final canPurchases = auth.can((p) => p.canCreatePurchase);
+    final canExpenses = auth.can((p) => p.canManageExpenses);
+    final canReports = auth.can((p) => p.canViewReports);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -433,16 +438,34 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  lang.isArabic ? 'الأقسام الإضافية' : 'More Modules & Operations',
+                  lang.isArabic ? 'الأقسام الإضافية والعمليات' : 'More Modules & Operations',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 12),
                 ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: AppColors.purchaseBlue.withOpacity(0.12),
-                    child: const Icon(Icons.shopping_bag, color: AppColors.purchaseBlue),
+                    backgroundColor: canPurchases ? AppColors.purchaseBlue.withOpacity(0.12) : Colors.grey.shade200,
+                    child: Icon(
+                      canPurchases ? Icons.shopping_bag : Icons.lock_outline,
+                      color: canPurchases ? AppColors.purchaseBlue : Colors.grey.shade600,
+                    ),
                   ),
-                  title: Text(lang.translate('purchases'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Row(
+                    children: [
+                      Text(lang.translate('purchases'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (!canPurchases) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(4)),
+                          child: Text(
+                            lang.isArabic ? 'صلاحية مقيدة' : 'Restricted',
+                            style: TextStyle(fontSize: 10, color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                   subtitle: Text(lang.isArabic ? 'إدارة الموردين وأوامر الشراء' : 'Suppliers & Purchase Invoices'),
                   trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
                   onTap: () {
@@ -452,10 +475,28 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                 ),
                 ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: AppColors.expenseRed.withOpacity(0.12),
-                    child: const Icon(Icons.receipt_long, color: AppColors.expenseRed),
+                    backgroundColor: canExpenses ? AppColors.expenseRed.withOpacity(0.12) : Colors.grey.shade200,
+                    child: Icon(
+                      canExpenses ? Icons.receipt_long : Icons.lock_outline,
+                      color: canExpenses ? AppColors.expenseRed : Colors.grey.shade600,
+                    ),
                   ),
-                  title: Text(lang.translate('expenses'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Row(
+                    children: [
+                      Text(lang.translate('expenses'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (!canExpenses) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(4)),
+                          child: Text(
+                            lang.isArabic ? 'صلاحية مقيدة' : 'Restricted',
+                            style: TextStyle(fontSize: 10, color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                   subtitle: Text(lang.isArabic ? 'مصروفات السيارة والمحروقات والعهدة' : 'Van Running, Fuel & Daily Expenses'),
                   trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
                   onTap: () {
@@ -465,10 +506,28 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                 ),
                 ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: Colors.purple.withOpacity(0.12),
-                    child: const Icon(Icons.bar_chart, color: Colors.purple),
+                    backgroundColor: canReports ? Colors.purple.withOpacity(0.12) : Colors.grey.shade200,
+                    child: Icon(
+                      canReports ? Icons.bar_chart : Icons.lock_outline,
+                      color: canReports ? Colors.purple : Colors.grey.shade600,
+                    ),
                   ),
-                  title: Text(lang.translate('reports'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Row(
+                    children: [
+                      Text(lang.translate('reports'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (!canReports) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(4)),
+                          child: Text(
+                            lang.isArabic ? 'صلاحية مقيدة' : 'Restricted',
+                            style: TextStyle(fontSize: 10, color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                   subtitle: Text(lang.isArabic ? 'إقرار الزكاة ZATCA وأعمار الديون' : 'ZATCA Tax Return & Aging Reports'),
                   trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
                   onTap: () {

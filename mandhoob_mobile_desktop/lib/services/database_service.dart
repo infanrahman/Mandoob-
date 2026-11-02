@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'local_storage_service.dart';
+import 'auth_service.dart';
+import '../core/errors/permission_exception.dart';
 import '../models/company_model.dart';
 import '../models/customer_model.dart';
 import '../models/supplier_model.dart';
@@ -128,6 +130,11 @@ class DatabaseService extends ChangeNotifier {
   }
 
   Future<void> resetToInitialDemoData() async {
+    AuthService().enforcePermission(
+      (p) => p.canResetSystemData,
+      permissionName: 'canResetSystemData',
+      actionDescription: 'استعادة وضبط بيانات المصنع الافتراضية',
+    );
     await _storage.clearAll();
     _products.clear();
     _customers.clear();
@@ -168,6 +175,11 @@ class DatabaseService extends ChangeNotifier {
     required String city,
     required String postalCode,
   }) {
+    AuthService().enforcePermission(
+      (p) => p.canConfigureZatca,
+      permissionName: 'canConfigureZatca',
+      actionDescription: 'تعديل الملف الضريبي والبيانات الرسمية للمنشأة',
+    );
     companyNameAr = nameAr;
     companyNameEn = nameEn;
     this.vatNumber = vatNumber;
@@ -210,6 +222,11 @@ class DatabaseService extends ChangeNotifier {
 
   /// Add a newly created company (by Super Admin)
   void addCompany(CompanyModel company) {
+    AuthService().enforcePermission(
+      (p) => p.canManageUsers,
+      permissionName: 'canManageUsers',
+      actionDescription: 'إنشاء وإضافة شركة جديدة للنظام',
+    );
     _companies.add(company);
     notifyListeners();
   }
@@ -286,6 +303,11 @@ class DatabaseService extends ChangeNotifier {
 
   /// Record Customer Payment In (سند قبض)
   void addPaymentIn(PaymentVoucherModel voucher) {
+    AuthService().enforcePermission(
+      (p) => p.canCollectPayment,
+      permissionName: 'canCollectPayment',
+      actionDescription: 'تسجيل سند قبض وتحصيل مالي',
+    );
     _paymentVouchers.insert(0, voucher);
 
     // Deduct collected amount from customer's outstanding balance
@@ -320,6 +342,11 @@ class DatabaseService extends ChangeNotifier {
 
   /// Record Supplier Payment Out (سند صرف للمورد)
   void addPaymentOut(PaymentVoucherModel voucher) {
+    AuthService().enforcePermission(
+      (p) => p.canManageExpenses || p.canCreatePurchase,
+      permissionName: 'canManageExpenses',
+      actionDescription: 'تسجيل سند صرف وسداد دفعات للموردين',
+    );
     _paymentVouchers.insert(0, voucher);
 
     // Deduct paid amount from supplier's payable balance
@@ -412,6 +439,11 @@ class DatabaseService extends ChangeNotifier {
 
   /// Add a customer directly to the system
   void addCustomer(CustomerModel customer) {
+    AuthService().enforcePermission(
+      (p) => p.canManageCustomers,
+      permissionName: 'canManageCustomers',
+      actionDescription: 'إضافة عميل جديد',
+    );
     _customers.insert(0, customer);
     _storage.saveCustomers(_customers);
     notifyListeners();
@@ -419,6 +451,11 @@ class DatabaseService extends ChangeNotifier {
 
   /// Update an existing customer's details and credit terms
   void updateCustomer(CustomerModel customer) {
+    AuthService().enforcePermission(
+      (p) => p.canManageCustomers,
+      permissionName: 'canManageCustomers',
+      actionDescription: 'تعديل بيانات العميل',
+    );
     final index = _customers.indexWhere((c) => c.id == customer.id);
     if (index != -1) {
       _customers[index] = customer;
@@ -429,6 +466,11 @@ class DatabaseService extends ChangeNotifier {
 
   /// Delete a customer from the system
   void deleteCustomer(String customerId) {
+    AuthService().enforcePermission(
+      (p) => p.canManageCustomers && (p.canDeleteSale || p.canResetSystemData),
+      permissionName: 'canManageCustomers',
+      actionDescription: 'حذف العميل نهائياً من النظام',
+    );
     _customers.removeWhere((c) => c.id == customerId);
     _storage.saveCustomers(_customers);
     notifyListeners();
@@ -439,6 +481,11 @@ class DatabaseService extends ChangeNotifier {
     required String vanId,
     required CustomerModel customer,
   }) {
+    AuthService().enforcePermission(
+      (p) => p.canManageCustomers,
+      permissionName: 'canManageCustomers',
+      actionDescription: 'إضافة عميل لمسار سيارة التوزيع',
+    );
     _customers.insert(0, customer);
     _storage.saveCustomers(_customers);
     final vIndex = _salesmenProgress.indexWhere((p) => p.vanId == vanId);
@@ -463,12 +510,22 @@ class DatabaseService extends ChangeNotifier {
   // Suppliers Management
   // ---------------------------------------------------------------------------
   void addSupplier(SupplierModel supplier) {
+    AuthService().enforcePermission(
+      (p) => p.canManageSuppliers,
+      permissionName: 'canManageSuppliers',
+      actionDescription: 'إضافة مورد جديد',
+    );
     _suppliers.insert(0, supplier);
     _storage.saveSuppliers(_suppliers);
     notifyListeners();
   }
 
   void updateSupplier(SupplierModel supplier) {
+    AuthService().enforcePermission(
+      (p) => p.canManageSuppliers,
+      permissionName: 'canManageSuppliers',
+      actionDescription: 'تعديل بيانات المورد',
+    );
     final index = _suppliers.indexWhere((s) => s.id == supplier.id);
     if (index != -1) {
       _suppliers[index] = supplier;
@@ -478,6 +535,11 @@ class DatabaseService extends ChangeNotifier {
   }
 
   void deleteSupplier(String supplierId) {
+    AuthService().enforcePermission(
+      (p) => p.canManageSuppliers && (p.canDeleteSale || p.canResetSystemData),
+      permissionName: 'canManageSuppliers',
+      actionDescription: 'حذف مورد من النظام',
+    );
     _suppliers.removeWhere((s) => s.id == supplierId);
     _storage.saveSuppliers(_suppliers);
     notifyListeners();
@@ -498,6 +560,11 @@ class DatabaseService extends ChangeNotifier {
     String? billNumber,
     String? notes,
   }) {
+    AuthService().enforcePermission(
+      (p) => p.canCreatePurchase,
+      permissionName: 'canCreatePurchase',
+      actionDescription: 'تسجيل فاتورة مشتريات وتحديث أرصدة المستودع',
+    );
     final grandTotal = subtotal + vatAmount;
     final bNum = billNumber?.isNotEmpty == true
         ? billNumber!
@@ -562,12 +629,22 @@ class DatabaseService extends ChangeNotifier {
   // Company Users Management
   // ---------------------------------------------------------------------------
   void addCompanyUser(UserModel user) {
+    AuthService().enforcePermission(
+      (p) => p.canManageUsers,
+      permissionName: 'canManageUsers',
+      actionDescription: 'إضافة مستخدم جديد للنظام',
+    );
     _companyUsers.add(user);
     _storage.saveCompanyUsers(_companyUsers);
     notifyListeners();
   }
 
   void updateCompanyUser(UserModel user) {
+    AuthService().enforcePermission(
+      (p) => p.canManageUsers,
+      permissionName: 'canManageUsers',
+      actionDescription: 'تعديل بيانات المستخدم وصلاحياته',
+    );
     final index = _companyUsers.indexWhere((u) => u.id == user.id);
     if (index != -1) {
       _companyUsers[index] = user;
@@ -577,6 +654,11 @@ class DatabaseService extends ChangeNotifier {
   }
 
   void deleteCompanyUser(String userId) {
+    AuthService().enforcePermission(
+      (p) => p.canManageUsers,
+      permissionName: 'canManageUsers',
+      actionDescription: 'حذف مستخدم من النظام',
+    );
     _companyUsers.removeWhere((u) => u.id == userId);
     _storage.saveCompanyUsers(_companyUsers);
     notifyListeners();
@@ -698,6 +780,11 @@ class DatabaseService extends ChangeNotifier {
 
   // Adding an invoice
   void addInvoice(InvoiceModel invoice) {
+    AuthService().enforcePermission(
+      (p) => p.canCreateSale,
+      permissionName: 'canCreateSale',
+      actionDescription: 'إنشاء وإصدار فاتورة ضريبية',
+    );
     _invoices.insert(0, invoice);
 
     // Deduct stock from the chosen warehouse / van
@@ -767,14 +854,36 @@ class DatabaseService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Deleting an invoice (strictly restricted to authorized roles)
+  void deleteInvoice(String invoiceId) {
+    AuthService().enforcePermission(
+      (p) => p.canDeleteSale,
+      permissionName: 'canDeleteSale',
+      actionDescription: 'إلغاء أو حذف فاتورة ضريبية',
+    );
+    _invoices.removeWhere((inv) => inv.id == invoiceId);
+    _storage.saveInvoices(_invoices);
+    notifyListeners();
+  }
+
   // Adding an expense
   void addExpense(ExpenseModel expense) {
+    AuthService().enforcePermission(
+      (p) => p.canManageExpenses,
+      permissionName: 'canManageExpenses',
+      actionDescription: 'تسجيل وقيد سند صرف مصروف',
+    );
     _expenses.insert(0, expense);
     _storage.saveExpenses(_expenses);
     notifyListeners();
   }
 
   void deleteExpense(String expenseId) {
+    AuthService().enforcePermission(
+      (p) => p.canManageExpenses,
+      permissionName: 'canManageExpenses',
+      actionDescription: 'حذف سند مصروف',
+    );
     _expenses.removeWhere((e) => e.id == expenseId);
     _storage.saveExpenses(_expenses);
     notifyListeners();
@@ -788,6 +897,11 @@ class DatabaseService extends ChangeNotifier {
     required String requestedByUserId,
     required String requestedByUserName,
   }) {
+    AuthService().enforcePermission(
+      (p) => p.canTransferVanStock,
+      permissionName: 'canTransferVanStock',
+      actionDescription: 'تحميل بضاعة وتزويد سيارة التوزيع',
+    );
     for (final item in items) {
       final pIndex = _products.indexWhere((p) => p.id == item.productId);
       if (pIndex != -1) {
@@ -823,6 +937,11 @@ class DatabaseService extends ChangeNotifier {
 
   // Add a new product
   void addProduct(ProductModel product) {
+    AuthService().enforcePermission(
+      (p) => p.canManageInventory,
+      permissionName: 'canManageInventory',
+      actionDescription: 'إضافة منتج جديد للمخزون',
+    );
     _products.add(product);
     _storage.saveProducts(_products);
     notifyListeners();
@@ -830,6 +949,11 @@ class DatabaseService extends ChangeNotifier {
 
   // Update existing product
   void updateProduct(ProductModel product) {
+    AuthService().enforcePermission(
+      (p) => p.canManageInventory,
+      permissionName: 'canManageInventory',
+      actionDescription: 'تعديل بيانات الصنف أو الأسعار',
+    );
     final index = _products.indexWhere((p) => p.id == product.id);
     if (index != -1) {
       _products[index] = product;
@@ -840,6 +964,11 @@ class DatabaseService extends ChangeNotifier {
 
   // Delete product
   void deleteProduct(String productId) {
+    AuthService().enforcePermission(
+      (p) => p.canManageInventory && (p.canDeleteSale || p.canResetSystemData),
+      permissionName: 'canManageInventory',
+      actionDescription: 'حذف صنف من النظام',
+    );
     _products.removeWhere((p) => p.id == productId);
     _storage.saveProducts(_products);
     notifyListeners();
@@ -855,6 +984,11 @@ class DatabaseService extends ChangeNotifier {
     required String userId,
     required String userName,
   }) {
+    AuthService().enforcePermission(
+      (p) => p.canManageInventory,
+      permissionName: 'canManageInventory',
+      actionDescription: 'تسوية الجرد وتعديل أرصدة المستودع',
+    );
     final pIndex = _products.indexWhere((p) => p.id == productId);
     if (pIndex != -1) {
       final prod = _products[pIndex];
@@ -899,6 +1033,11 @@ class DatabaseService extends ChangeNotifier {
     required String requestedByUserName,
     String? notes,
   }) {
+    AuthService().enforcePermission(
+      (p) => p.canManageInventory,
+      permissionName: 'canManageInventory',
+      actionDescription: 'نقل وتوزيع مخزوني بين المستودعات والفروع',
+    );
     final fromWh = _warehouses.firstWhere((w) => w.id == fromWarehouseId, orElse: () => _warehouses.first);
     final toWh = _warehouses.firstWhere((w) => w.id == toWarehouseId, orElse: () => _warehouses.last);
 

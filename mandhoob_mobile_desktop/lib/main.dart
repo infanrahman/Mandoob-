@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'core/localization/app_localizations.dart';
+import 'services/auth_service.dart';
+import 'widgets/access_denied_widget.dart';
 import 'widgets/adaptive_scaffold.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/sales/sales_list_screen.dart';
@@ -79,6 +81,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   Widget _getScreenForIndex(int index) {
+    final auth = AuthService();
     switch (index) {
       case 0:
         return DashboardScreen(
@@ -89,14 +92,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       case 1:
         return const SalesListScreen();
       case 2:
+        if (!auth.can((p) => p.canCreatePurchase)) {
+          return AccessDeniedWidget(
+            requiredPermissionName: 'canCreatePurchase',
+            customMessage: 'لا تمتلك صلاحية إدارة المشتريات والموردين. يتطلب هذا القسم دور المشرف أو المحاسب.',
+            onReturnHome: () => setState(() => _currentIndex = 0),
+          );
+        }
         return const PurchaseListScreen();
       case 3:
         return const InventoryScreen();
       case 4:
         return const CustomerListScreen();
       case 5:
+        if (!auth.can((p) => p.canManageExpenses)) {
+          return AccessDeniedWidget(
+            requiredPermissionName: 'canManageExpenses',
+            customMessage: 'لا تمتلك صلاحية إدارة وتدقيق المصروفات التشغيلية والعهدة.',
+            onReturnHome: () => setState(() => _currentIndex = 0),
+          );
+        }
         return const ExpenseListScreen();
       case 6:
+        if (!auth.can((p) => p.canViewReports)) {
+          return AccessDeniedWidget(
+            requiredPermissionName: 'canViewReports',
+            customMessage: 'التقارير المالية والضريبية مقيدة بالمحاسبين ومدراء النظام فقط.',
+            onReturnHome: () => setState(() => _currentIndex = 0),
+          );
+        }
         return const ReportsScreen();
       case 7:
         return const SettingsScreen();

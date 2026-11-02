@@ -18,6 +18,12 @@ class AppPermissions {
   final bool canConfigureZatca;
   final bool canConfigurePrinter;
   final bool canViewReports;
+  final bool canManageSuppliers;
+  final bool canManageCustomers;
+  final bool canAccessVanOpsHub;
+  final bool canResetSystemData;
+  final bool canCollectPayment;
+  final bool canManageExpenses;
 
   const AppPermissions({
     required this.canViewDashboard,
@@ -32,6 +38,12 @@ class AppPermissions {
     required this.canConfigureZatca,
     required this.canConfigurePrinter,
     required this.canViewReports,
+    this.canManageSuppliers = false,
+    this.canManageCustomers = true,
+    this.canAccessVanOpsHub = false,
+    this.canResetSystemData = false,
+    this.canCollectPayment = true,
+    this.canManageExpenses = false,
   });
 
   static AppPermissions fromRole(UserRole role) {
@@ -50,6 +62,12 @@ class AppPermissions {
           canConfigureZatca: true,
           canConfigurePrinter: true,
           canViewReports: true,
+          canManageSuppliers: true,
+          canManageCustomers: true,
+          canAccessVanOpsHub: true,
+          canResetSystemData: true,
+          canCollectPayment: true,
+          canManageExpenses: true,
         );
       case UserRole.admin:
         return const AppPermissions(
@@ -65,6 +83,12 @@ class AppPermissions {
           canConfigureZatca: true,
           canConfigurePrinter: true,
           canViewReports: true,
+          canManageSuppliers: true,
+          canManageCustomers: true,
+          canAccessVanOpsHub: true,
+          canResetSystemData: false,
+          canCollectPayment: true,
+          canManageExpenses: true,
         );
       case UserRole.salesman:
         return const AppPermissions(
@@ -80,6 +104,12 @@ class AppPermissions {
           canConfigureZatca: false,
           canConfigurePrinter: true,
           canViewReports: false,
+          canManageSuppliers: false,
+          canManageCustomers: true,
+          canAccessVanOpsHub: false,
+          canResetSystemData: false,
+          canCollectPayment: true,
+          canManageExpenses: false,
         );
       case UserRole.accountant:
         return const AppPermissions(
@@ -95,6 +125,12 @@ class AppPermissions {
           canConfigureZatca: false,
           canConfigurePrinter: true,
           canViewReports: true,
+          canManageSuppliers: true,
+          canManageCustomers: true,
+          canAccessVanOpsHub: true,
+          canResetSystemData: false,
+          canCollectPayment: true,
+          canManageExpenses: true,
         );
     }
   }

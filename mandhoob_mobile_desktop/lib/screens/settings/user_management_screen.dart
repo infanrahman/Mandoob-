@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/access_denied_widget.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({super.key});
@@ -15,8 +16,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: DatabaseService(),
+      listenable: Listenable.merge([DatabaseService(), AuthService()]),
       builder: (context, _) {
+        if (!AuthService().can((p) => p.canManageUsers)) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('إدارة مستخدمي المنشأة')),
+            body: const AccessDeniedWidget(
+              requiredPermissionName: 'canManageUsers',
+              customMessage: 'لا تمتلك صلاحية إدارة مستخدمي المنشأة والأدوار.',
+            ),
+          );
+        }
+
         final db = DatabaseService();
         final companyUsers = db.companyUsers;
 

@@ -56,16 +56,18 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
           appBar: AppBar(
             title: Text(lang.isArabic ? 'المخزون وسيارات التوزيع' : 'Stock & Van Inventory'),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.add_box_outlined),
-                tooltip: lang.isArabic ? 'إضافة صنف جديد' : 'Add New Product',
-                onPressed: () => _showAddOrEditProductDialog(context, null, lang, db),
-              ),
-              IconButton(
-                icon: const Icon(Icons.tune),
-                tooltip: lang.isArabic ? 'تسوية جردية' : 'Stock Adjustment',
-                onPressed: () => _showStockAdjustmentDialog(context, null, lang, db, auth),
-              ),
+              if (auth.can((p) => p.canManageInventory)) ...[
+                IconButton(
+                  icon: const Icon(Icons.add_box_outlined),
+                  tooltip: lang.isArabic ? 'إضافة صنف جديد' : 'Add New Product',
+                  onPressed: () => _showAddOrEditProductDialog(context, null, lang, db),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.tune),
+                  tooltip: lang.isArabic ? 'تسوية جردية' : 'Stock Adjustment',
+                  onPressed: () => _showStockAdjustmentDialog(context, null, lang, db, auth),
+                ),
+              ],
             ],
             bottom: TabBar(
               controller: _tabController,
@@ -416,49 +418,65 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                                       _confirmDeleteProduct(context, prod, lang, db);
                                     }
                                   },
-                                  itemBuilder: (ctx) => [
-                                    PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.edit, size: 18, color: AppColors.primary),
-                                          const SizedBox(width: 8),
-                                          Text(lang.isArabic ? 'تعديل الصنف والأسعار' : 'Edit Product'),
-                                        ],
-                                      ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'adjust',
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.tune, size: 18, color: Colors.orange),
-                                          const SizedBox(width: 8),
-                                          Text(lang.isArabic ? 'تسوية جردية (جرد فعلي)' : 'Adjust Stock'),
-                                        ],
-                                      ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'transfer',
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.move_to_inbox, size: 18, color: Colors.teal),
-                                          const SizedBox(width: 8),
-                                          Text(lang.isArabic ? 'نقل وتحميل للسيارة' : 'Transfer Stock'),
-                                        ],
-                                      ),
-                                    ),
-                                    const PopupMenuDivider(),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
-                                          const SizedBox(width: 8),
-                                          Text(lang.isArabic ? 'حذف الصنف' : 'Delete', style: const TextStyle(color: AppColors.expenseRed)),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                  itemBuilder: (ctx) {
+                                    final items = <PopupMenuEntry<String>>[];
+                                    if (auth.can((p) => p.canManageInventory)) {
+                                      items.add(
+                                        PopupMenuItem(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.edit, size: 18, color: AppColors.primary),
+                                              const SizedBox(width: 8),
+                                              Text(lang.isArabic ? 'تعديل الصنف والأسعار' : 'Edit Product'),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                      items.add(
+                                        PopupMenuItem(
+                                          value: 'adjust',
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.tune, size: 18, color: Colors.orange),
+                                              const SizedBox(width: 8),
+                                              Text(lang.isArabic ? 'تسوية جردية (جرد فعلي)' : 'Adjust Stock'),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    if (auth.can((p) => p.canTransferVanStock)) {
+                                      items.add(
+                                        PopupMenuItem(
+                                          value: 'transfer',
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.move_to_inbox, size: 18, color: Colors.teal),
+                                              const SizedBox(width: 8),
+                                              Text(lang.isArabic ? 'نقل وتحميل للسيارة' : 'Transfer Stock'),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    if (auth.can((p) => p.canManageInventory && (p.canDeleteSale || p.canResetSystemData))) {
+                                      items.add(const PopupMenuDivider());
+                                      items.add(
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                              const SizedBox(width: 8),
+                                              Text(lang.isArabic ? 'حذف الصنف' : 'Delete', style: const TextStyle(color: AppColors.expenseRed)),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return items;
+                                  },
                                 ),
                               ],
                             ),
@@ -508,10 +526,11 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                                           }).toList(),
                                         ),
                                       ),
-                                      Text(
-                                        '${lang.isArabic ? "الجملة" : "Wholesale"}: ${prod.wholesalePrice.toStringAsFixed(2)} $curr',
-                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                                      ),
+                                      if (auth.can((p) => p.canViewProfitAndCost))
+                                        Text(
+                                          '${lang.isArabic ? "الجملة" : "Wholesale"}: ${prod.wholesalePrice.toStringAsFixed(2)} $curr',
+                                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                        ),
                                     ],
                                   ),
                                 ],

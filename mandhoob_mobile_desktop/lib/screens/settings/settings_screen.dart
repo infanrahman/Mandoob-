@@ -238,11 +238,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          OutlinedButton.icon(
-                            onPressed: () => _showZatcaOnboardDialog(context),
-                            icon: const Icon(Icons.vpn_key, size: 16),
-                            label: Text(lang.isArabic ? 'تجديد شهادة CSID / رمز OTP' : 'Renew CSID / OTP'),
-                          ),
+                          if (auth.can((p) => p.canConfigureZatca))
+                            OutlinedButton.icon(
+                              onPressed: () => _showZatcaOnboardDialog(context),
+                              icon: const Icon(Icons.vpn_key, size: 16),
+                              label: Text(lang.isArabic ? 'تجديد شهادة CSID / رمز OTP' : 'Renew CSID / OTP'),
+                            ),
                           OutlinedButton.icon(
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -372,20 +373,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ],
                           ),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const UserManagementScreen()),
-                              );
-                            },
-                            icon: const Icon(Icons.people, size: 14),
-                            label: Text(lang.isArabic ? 'إدارة المستخدمين' : 'Manage Users'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.purple,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          if (auth.can((p) => p.canManageUsers))
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const UserManagementScreen()),
+                                );
+                              },
+                              icon: const Icon(Icons.people, size: 14),
+                              label: Text(lang.isArabic ? 'إدارة المستخدمين' : 'Manage Users'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.purple,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                       const Divider(height: 18),
@@ -469,10 +471,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             : 'Clear local database cache and restore initial seed data',
                         style: const TextStyle(fontSize: 11),
                       ),
-                      trailing: OutlinedButton(
-                        onPressed: () => _confirmResetDemoData(context, lang, db),
-                        child: Text(lang.isArabic ? 'استعادة' : 'Reset'),
-                      ),
+                      trailing: auth.can((p) => p.canResetSystemData)
+                          ? OutlinedButton(
+                              onPressed: () => _confirmResetDemoData(context, lang, db),
+                              child: Text(lang.isArabic ? 'استعادة' : 'Reset'),
+                            )
+                          : Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
+                              child: Text(lang.isArabic ? 'صلاحية محظورة' : 'Locked', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                            ),
                     ),
                     const Divider(height: 1),
                     ListTile(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
+import '../../services/auth_service.dart';
 import '../../models/invoice_model.dart';
 import 'create_invoice_screen.dart';
 import 'invoice_detail_screen.dart';
@@ -21,10 +22,11 @@ class _SalesListScreenState extends State<SalesListScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([DatabaseService(), AppLanguage()]),
+      listenable: Listenable.merge([DatabaseService(), AppLanguage(), AuthService()]),
       builder: (context, _) {
         final db = DatabaseService();
         final lang = AppLanguage();
+        final auth = AuthService();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
         // Filter list
@@ -322,21 +324,23 @@ class _SalesListScreenState extends State<SalesListScreen> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CreateInvoiceScreen()),
-              );
-            },
-            backgroundColor: AppColors.saleGreen,
-            elevation: 4,
-            icon: const Icon(Icons.add, color: Colors.white, size: 20),
-            label: Text(
-              lang.isArabic ? 'فاتورة جديدة' : '+ New Invoice',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-          ),
+          floatingActionButton: auth.can((p) => p.canCreateSale)
+              ? FloatingActionButton.extended(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CreateInvoiceScreen()),
+                    );
+                  },
+                  backgroundColor: AppColors.saleGreen,
+                  elevation: 4,
+                  icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                  label: Text(
+                    lang.isArabic ? 'فاتورة جديدة' : '+ New Invoice',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                )
+              : null,
         );
       },
     );

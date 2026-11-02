@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../core/errors/permission_exception.dart';
 
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
@@ -62,5 +63,24 @@ class AuthService extends ChangeNotifier {
 
   bool can(bool Function(AppPermissions) check) {
     return check(_currentUser.permissions);
+  }
+
+  bool hasRole(List<UserRole> allowedRoles) {
+    return allowedRoles.contains(_currentUser.role);
+  }
+
+  /// Strictly enforces permission; throws [PermissionDeniedException] if unauthorized.
+  void enforcePermission(
+    bool Function(AppPermissions) check, {
+    required String permissionName,
+    required String actionDescription,
+  }) {
+    if (!can(check)) {
+      throw PermissionDeniedException(
+        'المستخدم ${_currentUser.name} (${_currentUser.role.name}) لا يملك صلاحية $actionDescription.',
+        permission: permissionName,
+        requiredRole: _currentUser.role.name,
+      );
+    }
   }
 }
