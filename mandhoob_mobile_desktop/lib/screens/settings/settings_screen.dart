@@ -1353,6 +1353,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
           ],
         ),
+        const Divider(height: 24, thickness: 1, color: AppColors.cardBorder),
+        Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.cleaning_services_rounded, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    lang.isArabic ? 'بدء قاعدة بيانات إنتاجية فارغة' : 'Clean Production Database',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    lang.isArabic
+                        ? 'تفريغ البيانات التجريبية والبدء بكتالوج فارغ تماماً'
+                        : 'Wipe demo data and initialize a clean production ERP state',
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            if (canReset)
+              OutlinedButton.icon(
+                onPressed: () => _confirmResetCleanProduction(context, lang, db),
+                icon: const Icon(Icons.delete_sweep_rounded, size: 14),
+                label: Text(lang.isArabic ? 'تفريغ وبدء' : 'Clean Start'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Text(
+                  lang.isArabic ? 'صلاحية محظورة' : 'Admin Only',
+                  style: const TextStyle(fontSize: 9, color: AppColors.textMuted, fontWeight: FontWeight.bold),
+                ),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -1703,6 +1762,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             child: Text(
               lang.isArabic ? 'استعادة وتعيين' : 'Reset & Restore',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmResetCleanProduction(BuildContext context, AppLanguage lang, DatabaseService db) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.cleaning_services_rounded, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                lang.isArabic ? 'بدء قاعدة بيانات إنتاجية' : 'Start Clean Production ERP',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          lang.isArabic
+              ? 'سيتم مسح كافة البيانات التجريبية (الأصناف والعملاء والموردين والفواتير) وتهيئة النظام لبيانات إنتاجية حقيقية تماماً. هل تريد المتابعة؟'
+              : 'This will wipe all demo data (products, customers, suppliers, and invoices) and set up a 100% clean, production-ready ERP. Do you want to proceed?',
+          style: const TextStyle(fontSize: 12, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(lang.isArabic ? 'إلغاء' : 'Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              await db.resetToCleanProduction();
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      lang.isArabic
+                          ? 'تمت تهيئة قاعدة البيانات الإنتاجية بنجاح! جميع السجلات جاهزة وديناميكية بالكامل.'
+                          : 'Clean production database initialized successfully! All records are now dynamic.',
+                    ),
+                    backgroundColor: AppColors.saleGreen,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                );
+              }
+            },
+            child: Text(
+              lang.isArabic ? 'تأكيد التهيئة' : 'Confirm',
               style: const TextStyle(color: Colors.white),
             ),
           ),

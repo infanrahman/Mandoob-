@@ -180,7 +180,7 @@ class DashboardScreen extends StatelessWidget {
                     ] else ...[
                       _buildKpiCard(
                         title: lang.isArabic ? 'بضاعة السيارة' : 'Van Stock Value',
-                        value: '${db.getVanStockValue(auth.currentUser.assignedVanId ?? "VAN-01").toStringAsFixed(2)} $curr',
+                        value: '${db.getVanStockValue(auth.currentUser.assignedVanId ?? (db.warehouses.where((w) => w.isVan).isNotEmpty ? db.warehouses.where((w) => w.isVan).first.id : "VAN-01")).toStringAsFixed(2)} $curr',
                         subtitle: lang.isArabic ? 'المخزون الميداني' : 'Active Mobile Stock',
                         icon: Icons.inventory_2,
                         color: AppColors.secondary,
@@ -188,8 +188,17 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       _buildKpiCard(
                         title: lang.isArabic ? 'محطات اليوم' : "Today's Stops",
-                        value: '${db.customers.where((c) => (c.routeArea?.contains("شمال") ?? false) || (c.routeArea?.contains("North") ?? false)).length} ${lang.isArabic ? "محطات" : "Route Stops"}',
-                        subtitle: lang.isArabic ? 'مسار شمال الرياض' : 'Riyadh North Route',
+                        value: () {
+                          final vanMatch = db.salesmenProgress.where((p) => p.salesmanId == auth.currentUser.id || p.vanId == auth.currentUser.assignedVanId);
+                          final count = vanMatch.isNotEmpty ? vanMatch.first.routeStops.length : db.customers.length;
+                          return '$count ${lang.isArabic ? "محطات" : "Stops"}';
+                        }(),
+                        subtitle: () {
+                          final vanMatch = db.salesmenProgress.where((p) => p.salesmanId == auth.currentUser.id || p.vanId == auth.currentUser.assignedVanId);
+                          return vanMatch.isNotEmpty && vanMatch.first.assignedRouteName.isNotEmpty
+                              ? vanMatch.first.assignedRouteName
+                              : (lang.isArabic ? 'المسار الميداني' : 'Field Route');
+                        }(),
                         icon: Icons.alt_route,
                         color: AppColors.accent,
                         onTap: onNavigateToCustomers,
@@ -569,7 +578,7 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 const Divider(height: 24),
-                _buildCashRow(lang.isArabic ? 'الرصيد الافتتاحي للعهدة (Opening Float):' : 'Opening Float:', '2,500.00 $curr', Colors.black87),
+                _buildCashRow(lang.isArabic ? 'الرصيد الافتتاحي للعهدة (Opening Float):' : 'Opening Float:', '0.00 $curr', Colors.black87),
                 const SizedBox(height: 8),
                 _buildCashRow(lang.isArabic ? '+ مبيعات نقدية محصلة (Cash Sales):' : '+ Cash Sales:', '+ ${cashSales.toStringAsFixed(2)} $curr', Colors.green),
                 const SizedBox(height: 8),

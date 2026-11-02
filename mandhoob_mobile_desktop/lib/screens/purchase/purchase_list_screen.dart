@@ -4,9 +4,6 @@ import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/stock_transfer_model.dart';
-import '../../models/supplier_model.dart';
-import '../../models/product_model.dart';
-import '../../models/expense_model.dart';
 import '../../widgets/date_filter_bar.dart';
 
 class PurchaseListScreen extends StatefulWidget {
@@ -32,26 +29,28 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
         final lang = AppLanguage();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
-        // Inward Purchase Bills from expenses/ledger with Date + Search filtering
-        final purchaseBills = db.expenses
-            .where((e) => e.expenseNumber.startsWith('PUR'))
-            .where((e) => DateFilterHelper.matches(e.date, _billDatePreset, _billCustomRange))
-            .where((e) {
-              if (_paymentFilter == 'credit' && !e.paymentMode.toLowerCase().contains('credit') && !e.paymentMode.contains('آجل')) return false;
-              if (_paymentFilter == 'cash' && (e.paymentMode.toLowerCase().contains('credit') || e.paymentMode.contains('آجل'))) return false;
+        // Dedicated Inward Purchase Bills with Date + Search filtering
+        final purchaseBills = db.purchaseBills
+            .where((b) => DateFilterHelper.matches(b.date, _billDatePreset, _billCustomRange))
+            .where((b) {
+              if (_paymentFilter == 'credit' && !b.isCredit) return false;
+              if (_paymentFilter == 'cash' && b.isCredit) return false;
 
               if (_billSearchQuery.isNotEmpty) {
                 final q = _billSearchQuery.toLowerCase().trim();
-                return e.expenseNumber.toLowerCase().contains(q) ||
-                    e.description.toLowerCase().contains(q) ||
-                    e.spentByUserName.toLowerCase().contains(q) ||
-                    e.paymentMode.toLowerCase().contains(q);
+                return b.billNumber.toLowerCase().contains(q) ||
+                    b.supplierNameAr.toLowerCase().contains(q) ||
+                    b.supplierNameEn.toLowerCase().contains(q) ||
+                    b.warehouseName.toLowerCase().contains(q) ||
+                    (b.notes?.toLowerCase().contains(q) ?? false) ||
+                    b.createdByUserName.toLowerCase().contains(q) ||
+                    b.paymentMode.toLowerCase().contains(q);
               }
               return true;
             })
             .toList();
 
-        final totalPurchaseAmount = purchaseBills.fold(0.0, (sum, b) => sum + b.totalWithVat);
+        final totalPurchaseAmount = purchaseBills.fold(0.0, (sum, b) => sum + b.grandTotal);
         final totalVatAmount = purchaseBills.fold(0.0, (sum, b) => sum + b.vatAmount);
 
         return Scaffold(
@@ -262,12 +261,14 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              bill.expenseNumber,
+                                              bill.billNumber,
                                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              bill.description,
+                                              lang.isArabic
+                                                  ? (bill.supplierNameAr.isNotEmpty ? bill.supplierNameAr : bill.supplierNameEn)
+                                                  : (bill.supplierNameEn.isNotEmpty ? bill.supplierNameEn : bill.supplierNameAr),
                                               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
@@ -280,7 +281,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
                                           Text(
-                                            '${bill.totalWithVat.toStringAsFixed(2)} $curr',
+                                            '${bill.grandTotal.toStringAsFixed(2)} $curr',
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
@@ -323,7 +324,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
                                       const Icon(Icons.warehouse_outlined, size: 12, color: AppColors.textSecondary),
                                       const SizedBox(width: 4),
                                       Text(
-                                        lang.isArabic ? 'المستودع الرئيسي' : 'Main Warehouse',
+                                        bill.warehouseName.isNotEmpty ? bill.warehouseName : (lang.isArabic ? 'المستودع الرئيسي' : 'Main Warehouse'),
                                         style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                                       ),
                                       const Spacer(),
@@ -414,11 +415,14 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
     }
 
     String selectedSupplierId = db.suppliers.first.id;
-    String selectedWarehouseId = 'WH-MAIN';
+    String selectedWarehouseId = db.warehouses.isNotEmpty ? db.warehouses.first.id : 'WH-MAIN';
     String selectedProductId = db.products.first.id;
-    final qtyController = TextEditingController(text: '50');
+    final qtyController = TextEditingController(text: '1');
+    final initialCost = db.products.first.costPrice > 0
+        ? db.products.first.costPrice
+        : db.products.first.wholesalePrice;
     final unitCostController = TextEditingController(
-      text: db.products.first.wholesalePrice.toStringAsFixed(2),
+      text: initialCost.toStringAsFixed(2),
     );
     String paymentMode = 'Credit - آجل';
     final notesController = TextEditingController();
@@ -643,7 +647,6 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
                         onPressed: () {
                           if (qty <= 0 || cost <= 0) return;
 
-                          final supp = db.suppliers.firstWhere((s) => s.id == selectedSupplierId);
                           final prod = db.products.firstWhere((p) => p.id == selectedProductId);
 
                           db.recordPurchaseBill(

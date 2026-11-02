@@ -902,7 +902,6 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final trf = filteredTransfers[index];
-                    final totalItemsCount = trf.items.fold<double>(0.0, (s, it) => s + it.quantity);
 
                     return Card(
                       child: Padding(
@@ -1161,14 +1160,15 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     final nameEnCtrl = TextEditingController(text: existing?.nameEn ?? '');
     final skuCtrl = TextEditingController(text: existing?.sku ?? 'SKU-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}');
     final barcodeCtrl = TextEditingController(text: existing?.barcode ?? '628${DateTime.now().millisecondsSinceEpoch.toString().substring(4)}');
-    final categoryCtrl = TextEditingController(text: existing?.category ?? 'ألبان - Dairy');
-    final baseUnitCtrl = TextEditingController(text: existing?.baseUnit ?? 'حبة - Piece');
-    final costPriceCtrl = TextEditingController(text: existing != null ? existing.costPrice.toStringAsFixed(2) : '5.00');
-    final wholesalePriceCtrl = TextEditingController(text: existing != null ? existing.wholesalePrice.toStringAsFixed(2) : '6.50');
-    final retailPriceCtrl = TextEditingController(text: existing != null ? existing.retailPrice.toStringAsFixed(2) : '8.00');
-    final minStockCtrl = TextEditingController(text: existing != null ? existing.minStockAlert.toStringAsFixed(0) : '20');
-    final batchCtrl = TextEditingController(text: existing?.batchNumber ?? 'B-${DateTime.now().year}-01');
-    final initialStockCtrl = TextEditingController(text: existing != null ? existing.getStockFor('WH-MAIN').toStringAsFixed(0) : '100');
+    final categoryCtrl = TextEditingController(text: existing?.category ?? '');
+    final baseUnitCtrl = TextEditingController(text: existing?.baseUnit ?? (lang.isArabic ? 'حبة - Piece' : 'Piece'));
+    final costPriceCtrl = TextEditingController(text: existing != null ? existing.costPrice.toStringAsFixed(2) : '0.00');
+    final wholesalePriceCtrl = TextEditingController(text: existing != null ? existing.wholesalePrice.toStringAsFixed(2) : '0.00');
+    final retailPriceCtrl = TextEditingController(text: existing != null ? existing.retailPrice.toStringAsFixed(2) : '0.00');
+    final minStockCtrl = TextEditingController(text: existing != null ? existing.minStockAlert.toStringAsFixed(0) : '0');
+    final batchCtrl = TextEditingController(text: existing?.batchNumber ?? '');
+    final defaultWh = db.warehouses.isNotEmpty ? db.warehouses.first.id : 'WH-MAIN';
+    final initialStockCtrl = TextEditingController(text: existing != null ? existing.getStockFor(defaultWh).toStringAsFixed(0) : '0');
 
     showModalBottomSheet(
       context: context,

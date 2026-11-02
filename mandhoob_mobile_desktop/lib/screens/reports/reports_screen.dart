@@ -4,10 +4,10 @@ import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/invoice_model.dart';
+import '../../models/payment_voucher_model.dart';
 import '../../models/user_model.dart';
 import '../../widgets/date_filter_bar.dart';
 import '../../widgets/access_denied_widget.dart';
-import '../customers/customer_detail_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -479,86 +479,150 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                 },
               ),
 
-              // Tab 4: Salesman Performance
-              ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Card(
+              // Tab 4: Salesman Performance (Fully Dynamic for all registered salesmen)
+              () {
+                final salesmen = db.companyUsers.where((u) => u.role == UserRole.salesman).toList();
+                if (salesmen.isEmpty && db.salesmenProgress.isEmpty) {
+                  return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const CircleAvatar(child: Icon(Icons.person)),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      lang.isArabic ? 'محمد الدوسري - سيارة 1' : 'Mohammed Al-Dossari - Van 1',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      lang.isArabic ? 'مسار: الرياض شمال • أداء ممتاز' : 'Route: Riyadh North • Excellent',
-                                      style: const TextStyle(fontSize: 12, color: Colors.green),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 20),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    Text(lang.isArabic ? 'المبيعات' : "Sales", style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), overflow: TextOverflow.ellipsis),
-                                    Text(
-                                      '${db.todaySalesTotal.toStringAsFixed(2)} $curr',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.saleGreen),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    Text(lang.isArabic ? 'التحصيل' : 'Cash In', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), overflow: TextOverflow.ellipsis),
-                                    Text(
-                                      '${db.cashInHandTotal.toStringAsFixed(2)} $curr',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    Text(lang.isArabic ? 'بضاعة السيارة' : 'Van Stock', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), overflow: TextOverflow.ellipsis),
-                                    Text(
-                                      '${db.getVanStockValue('VAN-01').toStringAsFixed(0)} $curr',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.secondary),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      padding: const EdgeInsets.all(32),
+                      child: Text(
+                        lang.isArabic ? 'لا يوجد مناديب مبيعات مسجلين حالياً' : 'No sales representatives registered yet',
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  );
+                }
+
+                final count = salesmen.isNotEmpty ? salesmen.length : db.salesmenProgress.length;
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: count,
+                  itemBuilder: (context, index) {
+                    final salesmanName = salesmen.isNotEmpty
+                        ? salesmen[index].name
+                        : db.salesmenProgress[index].salesmanName;
+                    final vanId = salesmen.isNotEmpty
+                        ? (salesmen[index].assignedVanId ?? 'VAN-01')
+                        : db.salesmenProgress[index].vanId;
+                    final vanName = salesmen.isNotEmpty
+                        ? (salesmen[index].assignedVanName ?? vanId)
+                        : db.salesmenProgress[index].vanName;
+                    final salesmanId = salesmen.isNotEmpty
+                        ? salesmen[index].id
+                        : db.salesmenProgress[index].salesmanId;
+
+                    final salesmanInvoices = periodInvoices.where((i) => i.salesmanId == salesmanId).toList();
+                    final salesmanSales = salesmanInvoices.fold(
+                      0.0,
+                      (sum, i) => sum + (i.type == InvoiceType.salesReturn ? -i.grandTotal : i.grandTotal),
+                    );
+
+                    final salesmanCollections = db.paymentVouchers
+                        .where((v) => v.collectedByUserId == salesmanId && v.type == VoucherType.paymentIn)
+                        .where((v) => DateFilterHelper.matches(v.date, _reportDatePreset, _reportCustomRange))
+                        .fold(0.0, (sum, v) => sum + v.amount);
+
+                    final vanStock = db.getVanStockValue(vanId);
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                                  child: const Icon(Icons.person, color: AppColors.primary),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        salesmanName,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        '$vanName • ${salesmanInvoices.length} ${lang.isArabic ? "فواتير" : "Invoices"}',
+                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 20),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        lang.isArabic ? 'المبيعات' : "Sales",
+                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${salesmanSales.toStringAsFixed(2)} $curr',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.saleGreen),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        lang.isArabic ? 'التحصيل' : 'Cash In',
+                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${salesmanCollections.toStringAsFixed(2)} $curr',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        lang.isArabic ? 'بضاعة السيارة' : 'Van Stock',
+                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${vanStock.toStringAsFixed(2)} $curr',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.secondary),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }(),
             ],
           ),
         ),

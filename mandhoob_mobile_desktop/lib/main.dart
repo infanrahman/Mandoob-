@@ -14,8 +14,11 @@ import 'screens/expenses/expense_list_screen.dart';
 import 'screens/reports/reports_screen.dart';
 import 'screens/settings/settings_screen.dart';
 
-void main() {
+import 'services/database_service.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseService().init();
   runApp(const MandhoobApp());
 }
 

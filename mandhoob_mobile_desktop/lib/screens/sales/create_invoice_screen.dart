@@ -43,29 +43,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final db = DatabaseService();
 
     // Default to salesman's van or first warehouse
-    _selectedWarehouseId = widget.preselectedWarehouseId ?? auth.currentUser.assignedVanId ?? db.warehouses.first.id;
+    _selectedWarehouseId = widget.preselectedWarehouseId ??
+        auth.currentUser.assignedVanId ??
+        (db.warehouses.isNotEmpty ? db.warehouses.first.id : 'WH-MAIN');
 
     // Default to preselected or first customer
     if (widget.preselectedCustomer != null) {
       _selectedCustomer = widget.preselectedCustomer;
     } else if (db.customers.isNotEmpty) {
       _selectedCustomer = db.customers.first;
-    }
-
-    // Add first sample item
-    if (db.products.isNotEmpty) {
-      final p = db.products.first;
-      _items.add(
-        InvoiceItemModel(
-          productId: p.id,
-          productNameAr: p.nameAr,
-          productNameEn: p.nameEn,
-          barcode: p.barcode,
-          quantity: 2.0,
-          unit: p.baseUnit,
-          unitPrice: p.retailPrice,
-        ),
-      );
     }
   }
 
@@ -634,6 +620,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   void _showAddItemDialog(BuildContext context) {
     final db = DatabaseService();
+    final lang = AppLanguage();
+    if (db.products.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(lang.isArabic ? 'لا توجد منتجات مسجلة بالمخزون. يرجى إضافة أصناف أولاً.' : 'No products in inventory. Please add products first.'),
+          backgroundColor: AppColors.expenseRed,
+        ),
+      );
+      return;
+    }
     ProductModel selectedProd = db.products.first;
     double qty = 1.0;
     String unit = selectedProd.baseUnit;
@@ -838,7 +834,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       customerVatNumber: _selectedCustomer!.vatNumber,
       customerPhone: _selectedCustomer!.phone,
       warehouseId: _selectedWarehouseId,
-      warehouseName: db.warehouses.firstWhere((w) => w.id == _selectedWarehouseId).nameAr,
+      warehouseName: db.warehouses.any((w) => w.id == _selectedWarehouseId)
+          ? db.warehouses.firstWhere((w) => w.id == _selectedWarehouseId).nameAr
+          : (db.warehouses.isNotEmpty ? db.warehouses.first.nameAr : _selectedWarehouseId),
       salesmanId: auth.currentUser.id,
       salesmanName: auth.currentUser.name,
       items: List.from(_items),

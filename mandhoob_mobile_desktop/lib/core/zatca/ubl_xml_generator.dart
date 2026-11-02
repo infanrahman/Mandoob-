@@ -1,5 +1,4 @@
 import '../../models/invoice_model.dart';
-import '../../models/invoice_item_model.dart';
 
 /// ZATCA Phase 2 Official UBL 2.1 XML Invoice Generator
 /// Compliant with Saudi Zakat, Tax and Customs Authority (هيئة الزكاة والضريبة والجمارك)

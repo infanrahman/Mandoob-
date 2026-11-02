@@ -411,17 +411,17 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     final vatController = TextEditingController(text: existingCustomer?.vatNumber ?? '');
     final crController = TextEditingController(text: existingCustomer?.crNumber ?? '');
     final creditLimitController = TextEditingController(
-      text: existingCustomer?.creditLimit.toStringAsFixed(0) ?? '10000',
+      text: existingCustomer != null ? existingCustomer.creditLimit.toStringAsFixed(0) : '0',
     );
     final gracePeriodController = TextEditingController(
-      text: existingCustomer?.creditPeriodDays.toString() ?? '30',
+      text: existingCustomer != null ? existingCustomer.creditPeriodDays.toString() : '0',
     );
     final routeAreaController = TextEditingController(
-      text: existingCustomer?.routeArea ?? 'مسار شمال الرياض - Riyadh North',
+      text: existingCustomer?.routeArea ?? '',
     );
     final streetController = TextEditingController(text: existingCustomer?.street ?? '');
     final districtController = TextEditingController(text: existingCustomer?.district ?? '');
-    final cityController = TextEditingController(text: existingCustomer?.city ?? 'الرياض - Riyadh');
+    final cityController = TextEditingController(text: existingCustomer?.city ?? (db.city.isNotEmpty ? db.city : ''));
 
     showModalBottomSheet(
       context: context,

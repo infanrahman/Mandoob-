@@ -24,7 +24,6 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
       listenable: Listenable.merge([DatabaseService(), AppLanguage(), AuthService()]),
       builder: (context, _) {
         final db = DatabaseService();
-        final auth = AuthService();
         final lang = AppLanguage();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 

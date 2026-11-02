@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../services/database_service.dart';
-import '../../models/invoice_model.dart';
 import '../../models/product_model.dart';
 import '../sales/invoice_detail_screen.dart';
 import '../customers/customer_detail_screen.dart';

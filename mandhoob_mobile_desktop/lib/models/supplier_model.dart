@@ -34,6 +34,36 @@ class SupplierModel {
     return (currentBalance / creditLimit).clamp(0.0, 1.0);
   }
 
+  SupplierModel copyWith({
+    String? id,
+    String? nameAr,
+    String? nameEn,
+    String? phone,
+    String? email,
+    String? vatNumber,
+    String? crNumber,
+    String? city,
+    double? creditLimit,
+    int? creditPeriodDays,
+    double? openingBalance,
+    double? currentBalance,
+  }) {
+    return SupplierModel(
+      id: id ?? this.id,
+      nameAr: nameAr ?? this.nameAr,
+      nameEn: nameEn ?? this.nameEn,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      vatNumber: vatNumber ?? this.vatNumber,
+      crNumber: crNumber ?? this.crNumber,
+      city: city ?? this.city,
+      creditLimit: creditLimit ?? this.creditLimit,
+      creditPeriodDays: creditPeriodDays ?? this.creditPeriodDays,
+      openingBalance: openingBalance ?? this.openingBalance,
+      currentBalance: currentBalance ?? this.currentBalance,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

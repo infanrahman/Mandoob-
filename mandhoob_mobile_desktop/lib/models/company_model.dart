@@ -84,4 +84,50 @@ class CompanyModel {
       isActive: isActive ?? this.isActive,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'nameAr': nameAr,
+    'nameEn': nameEn,
+    'vatNumber': vatNumber,
+    'crNumber': crNumber,
+    'buildingNumber': buildingNumber,
+    'street': street,
+    'district': district,
+    'city': city,
+    'postalCode': postalCode,
+    'phone': phone,
+    'email': email,
+    'bankName': bankName,
+    'iban': iban,
+    'logoUrl': logoUrl,
+    'createdBySuperAdminId': createdBySuperAdminId,
+    'createdAt': createdAt.toIso8601String(),
+    'isZatcaPhase2Enabled': isZatcaPhase2Enabled,
+    'isActive': isActive,
+  };
+
+  factory CompanyModel.fromJson(Map<String, dynamic> json) => CompanyModel(
+    id: json['id'] as String,
+    nameAr: json['nameAr'] as String? ?? '',
+    nameEn: json['nameEn'] as String? ?? '',
+    vatNumber: json['vatNumber'] as String? ?? '',
+    crNumber: json['crNumber'] as String? ?? '',
+    buildingNumber: json['buildingNumber'] as String? ?? '',
+    street: json['street'] as String? ?? '',
+    district: json['district'] as String? ?? '',
+    city: json['city'] as String? ?? '',
+    postalCode: json['postalCode'] as String? ?? '',
+    phone: json['phone'] as String? ?? '',
+    email: json['email'] as String? ?? '',
+    bankName: json['bankName'] as String?,
+    iban: json['iban'] as String?,
+    logoUrl: json['logoUrl'] as String?,
+    createdBySuperAdminId: json['createdBySuperAdminId'] as String? ?? '',
+    createdAt: json['createdAt'] != null
+        ? DateTime.parse(json['createdAt'] as String)
+        : DateTime.now(),
+    isZatcaPhase2Enabled: json['isZatcaPhase2Enabled'] as bool? ?? true,
+    isActive: json['isActive'] as bool? ?? true,
+  );
 }

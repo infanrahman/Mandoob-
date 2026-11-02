@@ -26,11 +26,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       builder: (context, _) {
         final db = DatabaseService();
         final lang = AppLanguage();
-        final auth = AuthService();
         final curr = lang.isArabic ? 'ر.س' : 'SAR';
 
-        // Filter expenses by Date + Category + Search
-        final filteredExpenses = db.expenses.where((exp) {
+        // Filter operational expenses (excluding inward purchases) by Date + Category + Search
+        final filteredExpenses = db.expenses
+            .where((exp) => !exp.expenseNumber.startsWith('PUR'))
+            .where((exp) {
           // 1. Date filter
           if (!DateFilterHelper.matches(exp.date, _datePreset, _customDateRange)) {
             return false;

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../models/supplier_model.dart';
-import '../../models/product_model.dart';
 import '../../models/stock_transfer_model.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';

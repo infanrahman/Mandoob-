@@ -20,7 +20,6 @@ class _PaymentOutDialogState extends State<PaymentOutDialog> {
   double _amount = 0.0;
   VoucherPaymentMode _paymentMode = VoucherPaymentMode.bankTransfer;
   final TextEditingController _refController = TextEditingController();
-  final TextEditingController _bankController = TextEditingController(text: 'Al Rajhi Bank');
   final TextEditingController _notesController = TextEditingController();
 
   @override

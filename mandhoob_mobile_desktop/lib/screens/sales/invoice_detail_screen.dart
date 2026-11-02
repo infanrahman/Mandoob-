@@ -7,7 +7,6 @@ import '../../services/printer_service.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../core/zatca/ubl_xml_generator.dart';
-import '../../core/zatca/zatca_crypto_service.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
   final InvoiceModel invoice;

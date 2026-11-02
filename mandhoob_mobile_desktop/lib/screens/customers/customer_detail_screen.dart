@@ -3,7 +3,6 @@ import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../models/customer_model.dart';
 import '../../models/invoice_model.dart';
-import '../../models/payment_voucher_model.dart';
 import '../../services/database_service.dart';
 import '../sales/invoice_detail_screen.dart';
 import '../sales/create_invoice_screen.dart';

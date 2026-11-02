@@ -835,9 +835,13 @@ class _SalesmanLiveTrackingScreenState extends State<SalesmanLiveTrackingScreen>
     final nameArController = TextEditingController();
     final nameEnController = TextEditingController();
     final phoneController = TextEditingController();
-    final districtController = TextEditingController(text: routeArea.contains('(') ? routeArea.split('(')[1].replaceAll(')', '').split('،').first.trim() : 'العليا');
-    final creditLimitController = TextEditingController(text: '15000');
-    final creditDaysController = TextEditingController(text: '30');
+    final districtController = TextEditingController(
+      text: routeArea.contains('(')
+          ? routeArea.split('(')[1].replaceAll(')', '').split('،').first.trim()
+          : routeArea,
+    );
+    final creditLimitController = TextEditingController(text: '0');
+    final creditDaysController = TextEditingController(text: '0');
     final vatController = TextEditingController();
 
     showModalBottomSheet(

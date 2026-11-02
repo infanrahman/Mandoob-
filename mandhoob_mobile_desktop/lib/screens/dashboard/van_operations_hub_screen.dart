@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
-import '../../models/van_salesman_progress_model.dart';
 import '../../services/database_service.dart';
 import 'salesman_live_tracking_screen.dart';
 
@@ -97,89 +96,106 @@ class _VanOperationsHubScreenState extends State<VanOperationsHubScreen> {
                 ),
                 const SizedBox(height: 10),
 
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: list.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final prog = list[index];
+                if (list.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Text(
+                      lang.isArabic
+                          ? 'لا توجد سيارات أو مناديب توزيع نشطين حالياً'
+                          : 'No active vans or sales representatives registered yet',
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final prog = list[index];
 
-                    return Card(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => SalesmanLiveTrackingScreen(progress: prog),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              alignment: WrapAlignment.spaceBetween,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const CircleAvatar(
-                                      backgroundColor: Color(0xFFEFF6FF),
-                                      child: Icon(Icons.directions_car, color: AppColors.primary),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(prog.salesmanName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                        Text(
-                                          '${prog.vanName} • ${lang.isArabic ? "اللوحة" : "Plate"}: ${prog.vehiclePlateNumber}',
-                                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => SalesmanLiveTrackingScreen(progress: prog),
+                      return Card(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SalesmanLiveTrackingScreen(progress: prog),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const CircleAvatar(
+                                        backgroundColor: Color(0xFFEFF6FF),
+                                        child: Icon(Icons.directions_car, color: AppColors.primary),
                                       ),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.analytics, size: 14),
-                                  label: Text(lang.isArabic ? 'متابعة وتسوية' : 'Track & Settle'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(prog.salesmanName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                          Text(
+                                            '${prog.vanName} • ${lang.isArabic ? "اللوحة" : "Plate"}: ${prog.vehiclePlateNumber}',
+                                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
-
-                            const Divider(height: 20),
-
-                            // Route Progress Bar
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '${lang.isArabic ? "إنجاز المسار" : "Route"}: ${prog.assignedRouteName.split(' ')[1]}',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                    overflow: TextOverflow.ellipsis,
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => SalesmanLiveTrackingScreen(progress: prog),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.analytics, size: 14),
+                                    label: Text(lang.isArabic ? 'متابعة وتسوية' : 'Track & Settle'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
+                                ],
+                              ),
+
+                              const Divider(height: 20),
+
+                              // Route Progress Bar
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${lang.isArabic ? "إنجاز المسار" : "Route"}: ${prog.assignedRouteName.isNotEmpty ? prog.assignedRouteName : (lang.isArabic ? "مسار التوزيع" : "Delivery Route")}',
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                 Text(
                                   '${(prog.routeCompletionRatio * 100).toInt()}% (${prog.visitedStopsCount}/${prog.totalStopsCount} ${lang.isArabic ? "محطة" : "Stops"})',
                                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
